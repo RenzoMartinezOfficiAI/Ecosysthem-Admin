@@ -8,6 +8,7 @@ import {
   serverTimestamp,
   query,
   orderBy,
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { House } from '../../types';
@@ -35,6 +36,16 @@ export async function fetchHouses(): Promise<House[]> {
   const q = query(housesCol, orderBy('name'));
   const snap = await getDocs(q);
   return snap.docs.map(d => houseConverter(d.data(), d.id));
+}
+
+export function subscribeToHouses(onUpdate: (houses: House[]) => void): () => void {
+  const q = query(housesCol, orderBy('name'));
+  return onSnapshot(q, (snapshot) => {
+    const houses = snapshot.docs.map((d) => houseConverter(d.data(), d.id));
+    onUpdate(houses);
+  }, (error) => {
+    console.error("Error subscribing to houses:", error);
+  });
 }
 
 export async function fetchHouseById(id: string): Promise<House | null> {

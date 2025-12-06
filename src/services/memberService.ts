@@ -9,7 +9,8 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  QueryConstraint
+  QueryConstraint,
+  onSnapshot
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../lib/firebase';
@@ -76,6 +77,34 @@ export async function fetchMembers(statusFilter?: MemberStatus, houseIdFilter?: 
   const q = query(membersCol, ...constraints);
   const snap = await getDocs(q);
   return snap.docs.map(d => memberConverter(d.data(), d.id));
+}
+
+export function subscribeToMembers(
+  onUpdate: (members: Member[]) => void, 
+  statusFilter?: MemberStatus, 
+  houseIdFilter?: string[]
+): () => void {
+  const constraints: QueryConstraint[] = [];
+
+  if (statusFilter) {
+    constraints.push(where('status', '==', statusFilter));
+  }
+
+  // Firestore "in" query allows up to 10 values
+  if (houseIdFilter && houseIdFilter.length > 0) {
+    constraints.push(where('houseId', 'in', houseIdFilter.slice(0, 10)));
+  }
+
+  constraints.push(orderBy('fullName'));
+
+  const q = query(membersCol, ...constraints);
+  
+  return onSnapshot(q, (snapshot) => {
+    const members = snapshot.docs.map(d => memberConverter(d.data(), d.id));
+    onUpdate(members);
+  }, (error) => {
+    console.error("Error subscribing to members", error);
+  });
 }
 
 export async function fetchMemberById(id: string): Promise<Member | null> {

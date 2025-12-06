@@ -1,29 +1,40 @@
 import { useEffect, useState } from 'react';
-import type { Member, MemberStatus } from '../../types';
-import { fetchMembers } from '../services/memberService';
+import type { Member, MemberStatus, UserRole } from '../../types';
+import { subscribeToMembers } from '../services/memberService';
 
-export function useMembers(statusFilter?: MemberStatus) {
+export function useMembers(statusFilter?: MemberStatus, role?: UserRole, assignedHouseIds?: string[]) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const reload = async () => {
-    setLoading(true);
-    try {
-        const data = await fetchMembers(statusFilter);
-        setMembers(data);
-        setError(null);
-    } catch (e: any) {
-        console.error("Failed to fetch members", e);
-        setError(e);
-    } finally {
-        setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    reload();
-  }, [statusFilter]);
+    setLoading(true);
+    let houseFilter: string[] | undefined = undefined;
 
-  return { members, loading, error, reload };
+    // RBAC: If House Lead, strict filtering applies
+    if (role === 'HOUSE_LEAD') {
+       if (assignedHouseIds && assignedHouseIds.length > 0) {
+           houseFilter = assignedHouseIds;
+       } else {
+           // House Lead with no houses = empty list
+           setMembers([]);
+           setLoading(false);
+           return;
+       }
+    }
+
+    const unsubscribe = subscribeToMembers(
+      (data) => {
+        setMembers(data);
+        setLoading(false);
+        setError(null);
+      },
+      statusFilter,
+      houseFilter
+    );
+
+    return () => unsubscribe();
+  }, [statusFilter, role, assignedHouseIds?.join(',')]);
+
+  return { members, loading, error };
 }

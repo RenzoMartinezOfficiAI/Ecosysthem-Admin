@@ -6,17 +6,13 @@ import { createHouse, updateHouse, CreateHouseInput } from '../src/services/hous
 interface HousesProps {
   houses: House[];
   userRole: UserRole;
-  onRefresh?: () => void;
 }
 
-const Houses: React.FC<HousesProps> = ({ houses, userRole, onRefresh }) => {
+const Houses: React.FC<HousesProps> = ({ houses, userRole }) => {
   const [selectedHouseId, setSelectedHouseId] = useState<string | null>(null);
-  
-  // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingHouse, setEditingHouse] = useState<House | null>(null);
   
-  // Form States
   const [formData, setFormData] = useState<CreateHouseInput>({
     name: '', address: '', capacity: 0, status: 'ONLINE', tags: [], city: '', state: '', postalCode: '', notes: ''
   });
@@ -54,7 +50,7 @@ const Houses: React.FC<HousesProps> = ({ houses, userRole, onRefresh }) => {
         notes: house.notes || ''
     });
     setTagInput('');
-    setIsAddModalOpen(true); // Reusing the same modal for simplicity
+    setIsAddModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,7 +64,6 @@ const Houses: React.FC<HousesProps> = ({ houses, userRole, onRefresh }) => {
         }
         setIsAddModalOpen(false);
         setEditingHouse(null);
-        if (onRefresh) onRefresh();
     } catch (error) {
         console.error(error);
         alert("Operation failed. See console.");
@@ -91,7 +86,6 @@ const Houses: React.FC<HousesProps> = ({ houses, userRole, onRefresh }) => {
       setFormData({ ...formData, tags: formData.tags?.filter(t => t !== tag) });
   };
 
-  // If a house is selected for Inventory View
   if (selectedHouseId) {
     const selectedHouse = houses.find(h => h.id === selectedHouseId);
     if (!selectedHouse) return <div>House not found</div>;

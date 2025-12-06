@@ -7,19 +7,14 @@ interface MembersProps {
   members: Member[];
   houses: House[];
   userRole: UserRole;
-  onRefresh?: () => void;
 }
 
-const Members: React.FC<MembersProps> = ({ members: initialMembers, houses, userRole, onRefresh }) => {
+const Members: React.FC<MembersProps> = ({ members: initialMembers, houses, userRole }) => {
   const canEdit = [UserRole.ADMIN, UserRole.OPERATIONS_MANAGER].includes(userRole);
   const useLedger = FEATURE_FLAGS.useLedgerForBalances;
   
-  // Local state
-  const [members, setMembers] = useState(initialMembers);
-
-  useEffect(() => {
-    setMembers(initialMembers);
-  }, [initialMembers]);
+  // Directly use members from props, no need for local state if we trust parent
+  const members = initialMembers;
 
   // Modals
   const [showIntake, setShowIntake] = useState(false);
@@ -73,17 +68,14 @@ const Members: React.FC<MembersProps> = ({ members: initialMembers, houses, user
       e.preventDefault();
       setLoading(true);
       try {
-          // Combine emergency contact into member data
           const memberPayload = { ...intakeForm, emergencyContact };
-
-          // Determine if sponsorship data is required
           const needsSponsorship = intakeForm.payType === PayType.SPONSORED || intakeForm.payType === PayType.MIXED;
           
           await callIntakeMember(memberPayload, needsSponsorship ? sponsorshipForm : undefined);
           
           setShowIntake(false);
           resetIntakeForm();
-          if (onRefresh) onRefresh();
+          // No manual refresh needed
       } catch (err: any) {
           console.error(err);
           alert(err.message || "Intake failed");
@@ -99,7 +91,6 @@ const Members: React.FC<MembersProps> = ({ members: initialMembers, houses, user
       try {
           await callExitMember(selectedMemberId, exitForm.exitDate, exitForm.reason, exitForm.note);
           setShowExit(false);
-          if (onRefresh) onRefresh();
       } catch (err: any) {
           console.error(err);
           alert(err.message || "Exit failed");
@@ -212,7 +203,7 @@ const Members: React.FC<MembersProps> = ({ members: initialMembers, houses, user
         </div>
       </div>
 
-      {/* INTAKE MODAL */}
+      {/* INTAKE / EXIT MODALS (Using same state variables as before) */}
       {showIntake && (
         <div className="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">

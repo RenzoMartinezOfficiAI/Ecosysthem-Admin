@@ -1,7 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { calculateBillablePeriods, getBillingPeriod } from '../../src/utils/billingMath';
-import { BedCharge, SponsorshipCharge, Member, Sponsorship, MemberPayment, MemberAdjustment, MemberStatus, PayType } from '../../types';
+import { Member, Sponsorship, MemberStatus, PayType } from '../../types';
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -126,7 +125,7 @@ export const exitMemberFlow = functions.https.onCall(async (data, context) => {
     }
 });
 
-// --- CORE LEDGER FUNCTIONS ---
+// --- CORE LEDGER FUNCTIONS (Stubs for future implementation) ---
 
 export const runBillingForMemberTx = functions.https.onCall(async (data, context) => {
   return { success: true };
