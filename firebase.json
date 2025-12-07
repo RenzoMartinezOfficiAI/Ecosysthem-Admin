@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "ecosysthem-admin",
+    "site": "ecosysthem-admin-5176766-fd6e2",
     "public": "dist",
     "ignore": [
       "firebase.json",

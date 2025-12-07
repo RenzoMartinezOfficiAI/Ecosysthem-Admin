@@ -1,5 +1,3 @@
-"public": "public",
-...
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -7,17 +5,15 @@ import { getFunctions } from "firebase/functions";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDZ4LdI4fk2ZxvBz79Gs6HdaoByvVR-vGo",
-  authDomain: "ecosysthem-admin.firebaseapp.com",
-  databaseURL: "https://ecosysthem-admin-default-rtdb.firebaseio.com",
-  projectId: "ecosysthem-admin",
-  storageBucket: "ecosysthem-admin.firebasestorage.app",
-  messagingSenderId: "453418459474",
-  appId: "1:453418459474:web:59bd7ada18c94363b0da8b"
+  apiKey: "AIzaSyAEmiQ7Z8VPdG3rCXxz4iIig_nx8uJughM",
+  authDomain: "ecosysthem-admin-5176766-fd6e2.firebaseapp.com",
+  projectId: "ecosysthem-admin-5176766-fd6e2",
+  storageBucket: "ecosysthem-admin-5176766-fd6e2.firebasestorage.app",
+  messagingSenderId: "302755902426",
+  appId: "1:302755902426:web:874c07193686771cd2c6e3"
 };
 
-// Singleton pattern to prevent re-initialization in some dev environments
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
