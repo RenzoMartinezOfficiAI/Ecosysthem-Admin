@@ -1,106 +1,127 @@
-
 import { describe, it, expect } from '@jest/globals';
-import { calculateBillablePeriods, getBillingPeriod } from '../../src/utils/billingMath';
+import { calculateBilling, parseDateUTC, addMonthsUTC } from '../src/billing';
+import { Member, MemberStatus, PayType, Sponsorship } from '../../types';
 
-// Mock types for test clarity
-interface MockMember {
-  id: string;
-  intakeDate: string;
-  bedRate: number;
-  lastBilledIndex: number;
-}
+// Mock Factory
+const createMember = (overrides: Partial<Member> = {}): Member => ({
+    id: 'mem1',
+    fullName: 'Test User',
+    status: MemberStatus.ACTIVE,
+    label: 'MEMBER', // Cast to any if enum issues in test
+    intakeDate: '2024-01-01',
+    payType: PayType.SPONSORED,
+    bedRateMonthly: 1000,
+    lastBilledPeriodIndex: -1,
+    lastBilledThrough: undefined,
+    accountBalance: 0,
+    hasOutstandingBalance: false,
+    mediaRelease: false,
+    isVeteran: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...overrides
+} as Member);
 
-interface MockSponsorship {
-  id: string;
-  total: number;
-  remaining: number;
-  priority: number;
-}
+const createSponsorship = (overrides: Partial<Sponsorship> = {}): Sponsorship => ({
+    id: 'sp1',
+    memberId: 'mem1',
+    sponsorName: 'Test Sponsor',
+    totalAmount: 5000,
+    remainingAmount: 5000,
+    priority: 1,
+    startDate: '2024-01-01',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...overrides
+});
 
-describe('Billing Engine Logic', () => {
-  
-  // 1. BILLING MATH HELPERS
-  describe('calculateBillablePeriods', () => {
-    it('should return correct periods for a new member', () => {
-      // Intake: Jan 1. As of: March 15.
-      // Expected periods: 0 (Jan), 1 (Feb). Period 2 (Mar) starts Mar 1, so if billing runs Mar 15, it includes Mar.
-      // Wait, convention: usually we bill in advance or arrears. 
-      // If logic is "period start date <= asOfDate", then Jan 1, Feb 1, Mar 1 <= Mar 15.
-      // So returns [0, 1, 2].
-      
-      const intake = '2024-01-01';
-      const lastIndex = -1;
-      const asOf = '2024-03-15';
-      const periods = calculateBillablePeriods(intake, lastIndex, asOf);
-      expect(periods).toEqual([0, 1, 2]);
+describe('Billing Engine (Phase A)', () => {
+    
+    describe('Date Utils', () => {
+        it('should add months correctly (UTC)', () => {
+            const d1 = parseDateUTC('2024-01-31');
+            const d2 = addMonthsUTC(d1, 1);
+            // 2024 is leap year, Feb has 29 days.
+            expect(d2.toISOString().split('T')[0]).toBe('2024-02-29');
+            
+            const d3 = addMonthsUTC(d1, 2);
+            expect(d3.toISOString().split('T')[0]).toBe('2024-03-31');
+        });
     });
 
-    it('should return empty array if up to date', () => {
-      const intake = '2024-01-01';
-      const lastIndex = 2; // Billed through March
-      const asOf = '2024-03-15'; // Still in March
-      const periods = calculateBillablePeriods(intake, lastIndex, asOf);
-      expect(periods).toEqual([]);
+    describe('calculateBilling', () => {
+        it('should bill 1 period for new member (Intake Jan 1, AsOf Jan 15)', () => {
+            const member = createMember({ intakeDate: '2024-01-01' });
+            const result = calculateBilling(member, [], '2024-01-15');
+            
+            expect(result.newCharges).toHaveLength(1);
+            expect(result.newCharges[0].periodStart).toBe('2024-01-01');
+            expect(result.newCharges[0].periodEnd).toBe('2024-02-01');
+            expect(result.totalCharges).toBe(1000);
+            expect(result.newLastBilledIndex).toBe(0);
+        });
+
+        it('should NOT bill if period starts after asOfDate', () => {
+            // Intake Jan 1. Period 0: Jan 1. Period 1: Feb 1.
+            // AsOf: Jan 15. Should only generate Period 0.
+            const member = createMember({ intakeDate: '2024-01-01' });
+            const result = calculateBilling(member, [], '2024-01-15');
+            expect(result.newCharges).toHaveLength(1);
+        });
+
+        it('should apply sponsorship correctly (Full Coverage)', () => {
+            const member = createMember({ intakeDate: '2024-01-01', bedRateMonthly: 1000 });
+            const sponsor = createSponsorship({ remainingAmount: 5000 });
+            
+            // Bill for 2 months (Jan, Feb) -> AsOf Feb 15
+            const result = calculateBilling(member, [sponsor], '2024-02-15');
+            
+            expect(result.newCharges).toHaveLength(2); // Jan, Feb
+            expect(result.totalCharges).toBe(2000);
+            expect(result.totalCovered).toBe(2000);
+            expect(result.newSponsorshipCharges).toHaveLength(2);
+            
+            // Check remaining amount in result
+            const updatedSp = result.updatedSponsorships[0];
+            expect(updatedSp.remainingAmount).toBe(3000);
+        });
+
+        it('should handle partial sponsorship coverage', () => {
+            const member = createMember({ intakeDate: '2024-01-01', bedRateMonthly: 1000 });
+            // Sponsor has only $1500 left
+            const sponsor = createSponsorship({ remainingAmount: 1500 });
+            
+            // Bill for 2 months (Jan, Feb) -> Total Charge $2000
+            const result = calculateBilling(member, [sponsor], '2024-02-15');
+            
+            expect(result.totalCharges).toBe(2000);
+            expect(result.totalCovered).toBe(1500); // Max cap
+            
+            // Check individual charges
+            // Charge 1 (Jan): $1000 charge, $1000 covered.
+            // Charge 2 (Feb): $1000 charge, $500 covered.
+            expect(result.newSponsorshipCharges[0].amountCovered).toBe(1000);
+            expect(result.newSponsorshipCharges[1].amountCovered).toBe(500);
+            
+            expect(result.updatedSponsorships[0].remainingAmount).toBe(0);
+        });
+
+        it('should respect sponsorship start/end dates', () => {
+            const member = createMember({ intakeDate: '2024-01-01', bedRateMonthly: 1000 });
+            // Sponsor starts Feb 1
+            const sponsor = createSponsorship({ startDate: '2024-02-01', remainingAmount: 5000 });
+            
+            // Bill Jan and Feb
+            const result = calculateBilling(member, [sponsor], '2024-02-15');
+            
+            // Jan (Period 0): Not covered (sponsor starts Feb 1)
+            // Feb (Period 1): Covered
+            
+            expect(result.totalCharges).toBe(2000);
+            expect(result.newSponsorshipCharges).toHaveLength(1); // Only Feb
+            expect(result.newSponsorshipCharges[0].periodIndex).toBe(1);
+            expect(result.totalCovered).toBe(1000);
+        });
     });
-  });
-
-  // 2. SCENARIO: SPONSOR EXHAUSTION
-  describe('Sponsor Exhaustion Scenario', () => {
-    it('should split charges correctly when sponsor runs out', () => {
-       const member: MockMember = { id: 'm1', intakeDate: '2024-01-01', bedRate: 1000, lastBilledIndex: -1 };
-       const sponsor: MockSponsorship = { id: 's1', total: 1500, remaining: 1500, priority: 1 };
-       
-       // Bill 2 periods (Total charge 2000). Sponsor has 1500.
-       // Period 0: Charge 1000. Sponsor covers 1000. Remaining: 500.
-       // Period 1: Charge 1000. Sponsor covers 500. Remaining: 0. Member owes 500.
-       
-       let memberBalance = 0; // Starts at 0
-       
-       // Run Period 0
-       const p0 = 0;
-       const charge0 = member.bedRate;
-       memberBalance -= charge0; // -1000
-       
-       const cover0 = Math.min(charge0, sponsor.remaining); // 1000
-       sponsor.remaining -= cover0; // 500
-       memberBalance += cover0; // 0
-       
-       expect(cover0).toBe(1000);
-       expect(sponsor.remaining).toBe(500);
-       expect(memberBalance).toBe(0);
-
-       // Run Period 1
-       const p1 = 1;
-       const charge1 = member.bedRate;
-       memberBalance -= charge1; // -1000
-       
-       const cover1 = Math.min(charge1, sponsor.remaining); // 500
-       sponsor.remaining -= cover1; // 0
-       memberBalance += cover1; // -500
-       
-       expect(cover1).toBe(500);
-       expect(sponsor.remaining).toBe(0);
-       expect(memberBalance).toBe(-500); // Member owes $500
-    });
-  });
-
-  // 3. SCENARIO: RATE CHANGE
-  describe('Rate Change Scenario', () => {
-      it('should respect rate change for future periods only', () => {
-          // Ideally the system stores "BedRateHistory". 
-          // If the system currently only has "currentBedRate", then standard behavior 
-          // is usually "rate at moment of billing".
-          // If we change rate on Feb 15, and run billing for Feb (starts Feb 1), it uses new rate?
-          // Or we snapshot rate. 
-          
-          // Test expectation: BedCharge records `bedRateAtTime`.
-          const currentRate = 1200;
-          const charge = { bedRateAtTime: currentRate };
-          expect(charge.bedRateAtTime).toBe(1200);
-          
-          // This test confirms that our data model supports point-in-time rate freezing
-          // by having the `bedRateAtTime` field on the BedCharge interface.
-      });
-  });
-
 });

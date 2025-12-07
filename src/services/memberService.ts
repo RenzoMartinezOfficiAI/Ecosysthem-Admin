@@ -3,7 +3,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  addDoc,
   updateDoc,
   query,
   where,
@@ -49,7 +48,7 @@ function memberConverter(data: any, id: string): Member {
     mediaRelease: !!data.mediaRelease,
     notes: data.notes ?? undefined,
 
-    // Ledger defaults handled by converter to ensure app safety if fields missing in Firestore
+    // Ledger defaults
     lastBilledPeriodIndex: data.lastBilledPeriodIndex ?? -1,
     lastBilledThrough: data.lastBilledThrough ?? undefined,
     accountBalance: data.accountBalance ?? 0,
@@ -62,16 +61,10 @@ function memberConverter(data: any, id: string): Member {
 
 export async function fetchMembers(statusFilter?: MemberStatus, houseIdFilter?: string[]): Promise<Member[]> {
   const constraints: QueryConstraint[] = [];
-
-  if (statusFilter) {
-    constraints.push(where('status', '==', statusFilter));
-  }
-
-  // Firestore "in" query allows up to 10 values
+  if (statusFilter) constraints.push(where('status', '==', statusFilter));
   if (houseIdFilter && houseIdFilter.length > 0) {
     constraints.push(where('houseId', 'in', houseIdFilter.slice(0, 10)));
   }
-
   constraints.push(orderBy('fullName'));
 
   const q = query(membersCol, ...constraints);
@@ -85,16 +78,10 @@ export function subscribeToMembers(
   houseIdFilter?: string[]
 ): () => void {
   const constraints: QueryConstraint[] = [];
-
-  if (statusFilter) {
-    constraints.push(where('status', '==', statusFilter));
-  }
-
-  // Firestore "in" query allows up to 10 values
+  if (statusFilter) constraints.push(where('status', '==', statusFilter));
   if (houseIdFilter && houseIdFilter.length > 0) {
     constraints.push(where('houseId', 'in', houseIdFilter.slice(0, 10)));
   }
-
   constraints.push(orderBy('fullName'));
 
   const q = query(membersCol, ...constraints);
@@ -114,121 +101,28 @@ export async function fetchMemberById(id: string): Promise<Member | null> {
   return memberConverter(snap.data(), snap.id);
 }
 
-// Input type for creation - includes all initial fields
-export interface CreateMemberInput {
-  fullName: string;
-  phone?: string;
-  email?: string;
-  dateOfBirth?: string;
-
-  status?: MemberStatus;          
-  label?: MemberLabel;
-
-  houseId?: string | null;
-
-  isVeteran: boolean;
-  veteranBranch?: string;
-
-  payType: PayType;
-  bedRateMonthly: number;
-
-  incomeSources?: MemberIncomeSource[];
-
-  intakeDate: string;
-  exitDate?: string;
-
-  emergencyContact?: EmergencyContact;
-  insuranceProviderName?: string;
-  insuranceMemberId?: string;
-
-  mediaRelease: boolean;
-  notes?: string;
-}
-
-export async function createMember(input: CreateMemberInput): Promise<string> {
-  const now = new Date().toISOString();
-
-  // Helper to strip undefined values
-  const clean = (obj: any) => {
-    Object.keys(obj).forEach(key => obj[key] === undefined && delete obj[key]);
-    return obj;
-  };
-
-  const docRef = await addDoc(membersCol, clean({
-    fullName: input.fullName.trim(),
-    phone: input.phone ?? null,
-    email: input.email ?? null,
-    dateOfBirth: input.dateOfBirth ?? null,
-
-    status: input.status ?? 'ACTIVE',
-    label: input.label ?? 'MEMBER',
-
-    houseId: input.houseId ?? null,
-
-    isVeteran: !!input.isVeteran,
-    veteranBranch: input.veteranBranch ?? null,
-
-    payType: input.payType,
-    bedRateMonthly: input.bedRateMonthly,
-
-    incomeSources: input.incomeSources ?? [],
-
-    intakeDate: input.intakeDate,
-    exitDate: input.exitDate ?? null,
-
-    emergencyContact: input.emergencyContact ?? null,
-    insuranceProviderName: input.insuranceProviderName ?? null,
-    insuranceMemberId: input.insuranceMemberId ?? null,
-
-    mediaRelease: !!input.mediaRelease,
-    notes: input.notes ?? null,
-
-    // Ledger defaults (Client writes these ONLY on create)
-    lastBilledPeriodIndex: -1,
-    lastBilledThrough: null,
-    accountBalance: 0,
-    hasOutstandingBalance: false,
-
-    createdAt: now,
-    updatedAt: now,
-    createdAtServer: serverTimestamp(),
-    updatedAtServer: serverTimestamp(),
-  }));
-
-  return docRef.id;
-}
-
 export interface UpdateMemberInput {
   fullName?: string;
   phone?: string;
   email?: string;
   dateOfBirth?: string;
-
   status?: MemberStatus;
   label?: MemberLabel;
-
   houseId?: string | null;
-
   isVeteran?: boolean;
   veteranBranch?: string | null;
-
   payType?: PayType;
   bedRateMonthly?: number;
-
   incomeSources?: MemberIncomeSource[];
-
   intakeDate?: string;
   exitDate?: string | null;
-
   emergencyContact?: EmergencyContact | null;
   insuranceProviderName?: string | null;
   insuranceMemberId?: string | null;
-
   mediaRelease?: boolean;
   notes?: string | null;
 }
 
-// IMPORTANT: This function deliberately excludes ledger fields from the input type.
 export async function updateMember(id: string, input: UpdateMemberInput): Promise<void> {
   const ref = doc(db, 'members', id);
   
@@ -237,31 +131,24 @@ export async function updateMember(id: string, input: UpdateMemberInput): Promis
     updatedAtServer: serverTimestamp(),
   };
 
+  // Explicit mapping prevents any accidental injection of ledger fields
   if (input.fullName !== undefined) update.fullName = input.fullName.trim();
   if (input.phone !== undefined) update.phone = input.phone;
   if (input.email !== undefined) update.email = input.email;
   if (input.dateOfBirth !== undefined) update.dateOfBirth = input.dateOfBirth;
-
   if (input.status !== undefined) update.status = input.status;
   if (input.label !== undefined) update.label = input.label;
-
   if (input.houseId !== undefined) update.houseId = input.houseId;
-
   if (input.isVeteran !== undefined) update.isVeteran = input.isVeteran;
   if (input.veteranBranch !== undefined) update.veteranBranch = input.veteranBranch;
-
   if (input.payType !== undefined) update.payType = input.payType;
   if (input.bedRateMonthly !== undefined) update.bedRateMonthly = input.bedRateMonthly;
-
   if (input.incomeSources !== undefined) update.incomeSources = input.incomeSources;
-
   if (input.intakeDate !== undefined) update.intakeDate = input.intakeDate;
   if (input.exitDate !== undefined) update.exitDate = input.exitDate;
-
   if (input.emergencyContact !== undefined) update.emergencyContact = input.emergencyContact;
   if (input.insuranceProviderName !== undefined) update.insuranceProviderName = input.insuranceProviderName;
   if (input.insuranceMemberId !== undefined) update.insuranceMemberId = input.insuranceMemberId;
-
   if (input.mediaRelease !== undefined) update.mediaRelease = input.mediaRelease;
   if (input.notes !== undefined) update.notes = input.notes;
 
@@ -270,15 +157,16 @@ export async function updateMember(id: string, input: UpdateMemberInput): Promis
 
 // CLOUD FUNCTIONS
 
-// Strict typing for intake payload
 interface IntakePayload {
-    memberData: Partial<Member>;
+    // Only allow Partial of the editable fields. 
+    // Ideally, define a strict IntakeDTO to avoid confusion with Member model.
+    memberData: Omit<Partial<Member>, 'id' | 'accountBalance' | 'lastBilledPeriodIndex' | 'hasOutstandingBalance'>;
     sponsorshipData?: Partial<Sponsorship>;
 }
 
 export const callIntakeMember = async (memberData: Partial<Member>, sponsorshipData?: Partial<Sponsorship>) => {
-    // Cloud Functions are the preferred way to create members as they handle 
-    // the transactional complexity of creating the member AND the sponsorship AND the ledger safely.
+    // Note: memberData might technically contain ledger fields if passed from UI,
+    // but the Cloud Function MUST sanitize them.
     const intakeMember = httpsCallable<IntakePayload, { success: boolean; message?: string }>(functions, 'intakeMember');
     await intakeMember({ memberData, sponsorshipData });
 };
