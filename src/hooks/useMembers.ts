@@ -30,7 +30,13 @@ export function useMembers(statusFilter?: MemberStatus, role?: UserRole, assigne
         setError(null);
       },
       statusFilter,
-      houseFilter
+      houseFilter,
+      (err) => {
+        // Handle error by setting error state and ensuring loading stops
+        console.error("useMembers Hook Error:", err);
+        setError(err);
+        setLoading(false);
+      }
     );
 
     return () => unsubscribe();

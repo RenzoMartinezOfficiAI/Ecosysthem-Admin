@@ -176,6 +176,26 @@ export const recordPaymentTx = async (memberId: string, amount: number, source: 
   return payment;
 };
 
+export const recordAdjustmentTx = async (memberId: string, amount: number, reason: string, note?: string) => {
+    const member = simMembers.find(m => m.id === memberId);
+    if (!member) throw new Error("Member not found");
+
+    const adjustment: MemberAdjustment = {
+        id: `sim-adj-${Date.now()}`,
+        memberId,
+        amount,
+        reason,
+        note: note || '',
+        effectiveDate: new Date().toISOString(),
+        createdByUserId: 'admin-sim',
+        createdAt: new Date().toISOString()
+    };
+    simAdjustments.push(adjustment);
+    member.accountBalance += amount;
+    member.hasOutstandingBalance = member.accountBalance < 0;
+    return adjustment;
+}
+
 // --- PHASE C: SUMMARY AGGREGATION ---
 
 const updateSummaries = () => {
@@ -222,6 +242,12 @@ const updateSummaries = () => {
         const s = getSummary(p.memberId, p.createdAt);
         s.totalPayments += p.amount;
         s.netDelta += p.amount;
+    });
+
+    simAdjustments.forEach(a => {
+        const s = getSummary(a.memberId, a.createdAt);
+        s.totalAdjustments += a.amount;
+        s.netDelta += a.amount;
     });
 
     simSummaries = Object.values(summaries).sort((a,b) => b.yearMonth.localeCompare(a.yearMonth));

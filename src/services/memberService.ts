@@ -75,7 +75,8 @@ export async function fetchMembers(statusFilter?: MemberStatus, houseIdFilter?: 
 export function subscribeToMembers(
   onUpdate: (members: Member[]) => void, 
   statusFilter?: MemberStatus, 
-  houseIdFilter?: string[]
+  houseIdFilter?: string[],
+  onError?: (error: Error) => void
 ): () => void {
   const constraints: QueryConstraint[] = [];
   if (statusFilter) constraints.push(where('status', '==', statusFilter));
@@ -91,6 +92,7 @@ export function subscribeToMembers(
     onUpdate(members);
   }, (error) => {
     console.error("Error subscribing to members", error);
+    if (onError) onError(error);
   });
 }
 
@@ -158,15 +160,11 @@ export async function updateMember(id: string, input: UpdateMemberInput): Promis
 // CLOUD FUNCTIONS
 
 interface IntakePayload {
-    // Only allow Partial of the editable fields. 
-    // Ideally, define a strict IntakeDTO to avoid confusion with Member model.
     memberData: Omit<Partial<Member>, 'id' | 'accountBalance' | 'lastBilledPeriodIndex' | 'hasOutstandingBalance'>;
     sponsorshipData?: Partial<Sponsorship>;
 }
 
 export const callIntakeMember = async (memberData: Partial<Member>, sponsorshipData?: Partial<Sponsorship>) => {
-    // Note: memberData might technically contain ledger fields if passed from UI,
-    // but the Cloud Function MUST sanitize them.
     const intakeMember = httpsCallable<IntakePayload, { success: boolean; message?: string }>(functions, 'intakeMember');
     await intakeMember({ memberData, sponsorshipData });
 };

@@ -1,7 +1,7 @@
 
 import { Member, MemberAdjustment } from '../../types';
 import { MOCK_MEMBERS } from '../../services/mockData';
-import { recordPaymentTx } from './ledgerSimulation'; // Simulating using ledger writer
+import { recordAdjustmentTx } from './ledgerSimulation'; // Simulating using ledger writer
 
 export interface MigrationPlan {
     memberId: string;
@@ -52,11 +52,10 @@ export const executeMigration = async (plans: MigrationPlan[]): Promise<{success
             // However, recordAdjustment logic might vary. 
             // Usually: Adjustment Amount > 0 is CREDIT. Amount < 0 is CHARGE.
             
-            // Using the simulation's recordPaymentTx as a proxy for generic ledger write for now,
-            // or we can imagine a recordAdjustmentTx exists.
+            // Using the simulation's recordAdjustmentTx 
             
             // Simulating a "System Adjustment"
-            // For the purpose of this mock, we'll just log it.
+            await recordAdjustmentTx(plan.memberId, plan.proposedAdjustment, 'MIGRATION_ADJUSTMENT', 'Legacy Migration Opening Balance');
             console.log(`[MIGRATION] Setting Opening Balance for ${plan.memberName}: ${plan.proposedAdjustment}`);
             success++;
         } catch (e) {

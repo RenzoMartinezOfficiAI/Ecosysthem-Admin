@@ -38,13 +38,17 @@ export async function fetchHouses(): Promise<House[]> {
   return snap.docs.map(d => houseConverter(d.data(), d.id));
 }
 
-export function subscribeToHouses(onUpdate: (houses: House[]) => void): () => void {
+export function subscribeToHouses(
+  onUpdate: (houses: House[]) => void,
+  onError?: (error: Error) => void
+): () => void {
   const q = query(housesCol, orderBy('name'));
   return onSnapshot(q, (snapshot) => {
     const houses = snapshot.docs.map((d) => houseConverter(d.data(), d.id));
     onUpdate(houses);
   }, (error) => {
     console.error("Error subscribing to houses:", error);
+    if (onError) onError(error);
   });
 }
 
