@@ -11,7 +11,7 @@ import MigrationTool from './components/admin/MigrationTool';
 import AuditLog from './components/admin/AuditLog';
 import Auth from './components/Auth';
 import Profile from './components/Profile';
-import { HousesPage } from './components/HousesPage'; // Import the new debug page
+import { HousingAssignment } from './components/HousingAssignment'; 
 import { useAuth } from './src/context/AuthContext';
 import { UserRole } from './types';
 import { MOCK_SYSTEM_ERRORS, MOCK_SPONSORSHIPS } from './services/mockData';
@@ -19,14 +19,14 @@ import { useHouses } from './src/hooks/useHouses';
 import { useMembers } from './src/hooks/useMembers';
 
 const App: React.FC = () => {
-  const { user, role, loading: authLoading } = useAuth(); // Use 'role' from AuthContext
+  const { user, role, loading: authLoading } = useAuth();
 
   // Navigation State
   const [page, setPage] = useState('dashboard');
 
   // Application Data State - REAL-TIME HOOKS
   const { houses, loading: housesLoading, error: housesError } = useHouses();
-  const { members, loading: membersLoading, error: membersError } = useMembers(); // Pass role if needed for RBAC filtering in the future
+  const { members, loading: membersLoading, error: membersError } = useMembers(); 
   
   // Static/Mock data for parts not yet fully backend-integrated
   const [errors] = useState(MOCK_SYSTEM_ERRORS);
@@ -39,7 +39,6 @@ const App: React.FC = () => {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         <p className="text-slate-500 text-sm">Loading Application Data...</p>
         
-        {/* Show error messages if loading takes too long or fails */}
         {(housesError || membersError) && (
             <div className="bg-rose-50 p-4 rounded text-rose-700 text-sm max-w-md text-center border border-rose-200">
                 <p className="font-bold">Error Loading Data</p>
@@ -65,9 +64,8 @@ const App: React.FC = () => {
     return <Auth needsVerification={true} email={user.email || ''} />;
   }
 
-  // Determine Role (Fallback to a safe default if role is missing, though AuthContext should handle it)
-  // We use the REAL role from AuthContext now.
-  const currentUserRole = role || UserRole.HOUSE_LEAD; // Default to lowest privilege if undefined
+  // Determine Role
+  const currentUserRole = role || UserRole.HOUSE_LEAD;
 
   // Router Logic
   const renderPage = () => {
@@ -76,8 +74,9 @@ const App: React.FC = () => {
         return <Dashboard houses={houses} members={members} errors={errors} />;
       case 'houses':
         return <Houses houses={houses} userRole={currentUserRole} />;
-      case 'houses-debug': // Add route for debugging
-        return <HousesPage />;
+      case 'housing-assignment':
+        if (currentUserRole === UserRole.HOUSE_LEAD) return <Dashboard houses={houses} members={members} errors={errors} />;
+        return <HousingAssignment />;
       case 'members':
         return <Members members={members} houses={houses} userRole={currentUserRole} />;
       case 'financials':
@@ -102,10 +101,7 @@ const App: React.FC = () => {
   return (
     <Layout 
       currentRole={currentUserRole} 
-      // We removed onRoleChange because we are using real Auth roles now. 
-      // Layout might expect it, so we pass a dummy function or update Layout props.
-      // For now, let's keep it but make it a no-op or log warning if user tries to switch.
-      onRoleChange={(r) => console.warn("Role switching is disabled in Production. Authenticate as that user.")}
+      onRoleChange={(r) => console.warn("Role switching is disabled in Production.")}
       currentPage={page}
       onNavigate={setPage}
     >

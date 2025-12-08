@@ -92,7 +92,7 @@ const Financials: React.FC<FinancialsProps> = ({ members, sponsorships, userRole
                         onClick={() => setActiveTab('summary')}
                         className={`flex-1 py-4 text-sm font-medium ${activeTab === 'summary' ? 'bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}
                     >
-                        Monthly Summaries (Phase C)
+                        Monthly Summaries
                     </button>
                     <button 
                         onClick={() => setActiveTab('ledger')}

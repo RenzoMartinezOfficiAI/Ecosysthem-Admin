@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged, signOut as firebaseSignOut, IdTokenResult } from 'firebase/auth';
-import { auth } from '../lib/firebase';
-import { UserRole } from '../../types'; // Adjust import path if needed
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
+import { UserRole } from '../../types';
 
 interface AuthContextType {
   user: User | null;
@@ -28,9 +29,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchRole = async (currentUser: User) => {
     try {
-      // Force refresh to get latest claims
+      // 1. Try Custom Claims first (Best performance)
       const tokenResult: IdTokenResult = await currentUser.getIdTokenResult(true);
-      const userRole = tokenResult.claims.role as UserRole;
+      let userRole = tokenResult.claims.role as UserRole;
+
+      // 2. If no custom claim, fallback to Firestore Document (Dev/Manual setup)
+      if (!userRole) {
+         const userDocRef = doc(db, 'users', currentUser.uid);
+         const userDoc = await getDoc(userDocRef);
+         if (userDoc.exists()) {
+             const data = userDoc.data();
+             if (data.role) {
+                 userRole = data.role as UserRole;
+             }
+         }
+      }
+
       setRole(userRole || null);
     } catch (e) {
       console.error("Error fetching user role", e);
@@ -42,9 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // Initial fetch logic
-        const tokenResult = await currentUser.getIdTokenResult();
-        setRole(tokenResult.claims.role as UserRole || null);
+        await fetchRole(currentUser);
       } else {
         setRole(null);
       }

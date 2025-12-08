@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendEmailVerification, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { auth, storage } from '../src/lib/firebase';
 import { useAuth } from '../src/context/AuthContext';
@@ -11,7 +11,6 @@ interface AuthProps {
 
 const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEmail = '' }) => {
   const { signOut } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   
@@ -21,9 +20,6 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
   // Form State
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
-  const [repeatPassword, setRepeatPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [photo, setPhoto] = useState<File | null>(null);
   
   // Icon State - Default to public reliable URL, try to fetch custom storage one
   const [googleIconUrl, setGoogleIconUrl] = useState('https://storage.googleapis.com/logos_misc/google-color.svg');
@@ -43,19 +39,6 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
     fetchCustomIcon();
   }, []);
 
-  const toggleMode = () => {
-    setIsLogin(!isLogin);
-    setError(null);
-    // Reset fields only when switching between Login/Register
-    // We preserve email for Forgot Password flow via logic below
-    if (!isForgotPassword) {
-        setEmail('');
-    }
-    setPassword('');
-    setRepeatPassword('');
-    setFullName('');
-  };
-
   const handleForgotPasswordClick = () => {
       setIsForgotPassword(true);
       setError(null);
@@ -65,7 +48,6 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
   const handleBackToLogin = () => {
       setIsForgotPassword(false);
       setResetEmailSent(false);
-      setIsLogin(true);
       setError(null);
   };
 
@@ -112,7 +94,6 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
     setLoading(true);
 
     try {
-      if (isLogin) {
         // LOGIN LOGIC
         try {
           const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -126,36 +107,7 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
              throw err;
           }
         }
-      } else {
-        // REGISTRATION LOGIC
-        if (password !== repeatPassword) {
-          throw new Error("Passwords do not match");
-        }
-        
-        try {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          
-          // Update profile with name
-          await updateProfile(userCredential.user, {
-            displayName: fullName
-          });
-
-          // Send verification email
-          await sendEmailVerification(userCredential.user);
-          
-          // Note: App.tsx will detect the new user. Since emailVerified is false,
-          // it will re-render this component with needsVerification=true.
-          
-        } catch (err: any) {
-          if (err.code === 'auth/email-already-in-use') {
-             throw new Error("User already exists. Sign in?");
-          } else {
-             throw err;
-          }
-        }
-      }
     } catch (err: any) {
-      // If it's the "User already exists" error, we want to maybe suggest switching to login
       setError(err.message);
     } finally {
       setLoading(false);
@@ -284,7 +236,7 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
             EcosysTHEM Admin
           </h1>
           <p className="text-slate-500">
-            {isLogin ? 'Sign in to access the console' : 'Create an account'}
+            Sign in to access the console
           </p>
         </div>
 
@@ -295,51 +247,11 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
              </svg>
              <div>
                 <p className="text-sm text-rose-700 font-medium">{error}</p>
-                {error === "User already exists. Sign in?" && (
-                    <button onClick={toggleMode} className="text-xs text-rose-800 underline mt-1 hover:text-rose-900">
-                        Switch to Sign In
-                    </button>
-                )}
              </div>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <>
-               <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-700">Profile Photo</label>
-                  <input 
-                    type="file" 
-                    accept="image/*"
-                    onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                            setPhoto(e.target.files[0]);
-                        }
-                    }}
-                    className="block w-full text-sm text-slate-500
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-full file:border-0
-                      file:text-xs file:font-semibold
-                      file:bg-indigo-50 file:text-indigo-700
-                      hover:file:bg-indigo-100
-                    "
-                  />
-               </div>
-               <div className="space-y-1">
-                <label className="block text-sm font-medium text-slate-700">Full Name</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                  placeholder="John Doe"
-                />
-              </div>
-            </>
-          )}
-
           <div className="space-y-1">
             <label className="block text-sm font-medium text-slate-700">Email</label>
             <input 
@@ -362,32 +274,16 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
               placeholder="••••••••"
             />
-             {isLogin && (
-                <div className="flex justify-end pt-1">
-                    <button 
-                        type="button" 
-                        onClick={handleForgotPasswordClick}
-                        className="text-xs text-indigo-600 hover:text-indigo-800 font-medium hover:underline"
-                    >
-                        Forgot password?
-                    </button>
-                </div>
-            )}
-          </div>
-
-          {!isLogin && (
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">Repeat Password</label>
-              <input 
-                type="password" 
-                required 
-                value={repeatPassword}
-                onChange={(e) => setRepeatPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                placeholder="••••••••"
-              />
+             <div className="flex justify-end pt-1">
+                <button 
+                    type="button" 
+                    onClick={handleForgotPasswordClick}
+                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium hover:underline"
+                >
+                    Forgot password?
+                </button>
             </div>
-          )}
+          </div>
 
           <button 
             type="submit" 
@@ -403,7 +299,7 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
                     Processing...
                 </span>
             ) : (
-                isLogin ? 'Sign In' : 'Create Account'
+                'Sign In'
             )}
           </button>
         </form>
@@ -434,16 +330,6 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
             />
             Google
         </button>
-
-        <div className="mt-6 text-center text-sm text-slate-600">
-          {isLogin ? "Don't have an account? " : "Already have an account? "}
-          <button 
-            onClick={toggleMode}
-            className="font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
-          >
-            {isLogin ? 'Sign up' : 'Sign in'}
-          </button>
-        </div>
       </div>
     </div>
   );

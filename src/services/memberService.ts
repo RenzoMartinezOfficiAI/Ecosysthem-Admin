@@ -9,7 +9,8 @@ import {
   orderBy,
   serverTimestamp,
   QueryConstraint,
-  onSnapshot
+  onSnapshot,
+  runTransaction
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../lib/firebase';
@@ -157,7 +158,79 @@ export async function updateMember(id: string, input: UpdateMemberInput): Promis
   await updateDoc(ref, update);
 }
 
-// CLOUD FUNCTIONS
+// CLIENT-SIDE INTAKE (Replaces Cloud Function for immediate availability)
+export async function createMember(memberData: Partial<Member>, sponsorshipData?: Partial<Sponsorship>): Promise<string> {
+    const now = new Date().toISOString();
+    const memberRef = doc(collection(db, 'members')); // Generate ID
+    const memberId = memberRef.id;
+
+    // Helper to remove undefined
+    const clean = (val: any) => val === undefined ? null : val;
+
+    // Default Member Object
+    const newMember: any = {
+        fullName: clean(memberData.fullName),
+        phone: clean(memberData.phone),
+        email: clean(memberData.email),
+        dateOfBirth: clean(memberData.dateOfBirth),
+        status: clean(memberData.status) || 'ACTIVE',
+        label: clean(memberData.label) || 'MEMBER',
+        intakeDate: clean(memberData.intakeDate) || now.split('T')[0],
+        payType: clean(memberData.payType) || 'SELF_PAY',
+        bedRateMonthly: clean(memberData.bedRateMonthly) || 0,
+        houseId: clean(memberData.houseId),
+        isVeteran: !!memberData.isVeteran,
+        mediaRelease: !!memberData.mediaRelease,
+        
+        // Ensure sub-objects are also clean
+        emergencyContact: memberData.emergencyContact ? {
+            name: clean(memberData.emergencyContact.name),
+            phone: clean(memberData.emergencyContact.phone),
+            relationship: clean(memberData.emergencyContact.relationship)
+        } : null,
+        
+        // Ledger Defaults
+        lastBilledPeriodIndex: -1,
+        accountBalance: 0,
+        hasOutstandingBalance: false,
+        
+        createdAt: now,
+        updatedAt: now
+    };
+
+    // Prepare Sponsorship if needed
+    let sponsorshipRef = null;
+    let newSponsorship = null;
+    if (sponsorshipData) {
+        sponsorshipRef = doc(collection(db, 'sponsorships'));
+        newSponsorship = {
+            memberId: memberId,
+            sponsorName: clean(sponsorshipData.sponsorName),
+            totalAmount: clean(sponsorshipData.totalAmount) || 0,
+            remainingAmount: clean(sponsorshipData.totalAmount) || 0,
+            priority: clean(sponsorshipData.priority) || 1,
+            startDate: clean(sponsorshipData.startDate) || now.split('T')[0],
+            isActive: true,
+            createdAt: now,
+            updatedAt: now
+        };
+    }
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            transaction.set(memberRef, newMember);
+            if (sponsorshipRef && newSponsorship) {
+                transaction.set(sponsorshipRef, newSponsorship);
+            }
+        });
+        return memberId;
+    } catch (e: any) {
+        console.error("Transaction failed: ", e);
+        throw new Error(`Failed to create member: ${e.message}`);
+    }
+}
+
+// CLOUD FUNCTIONS (Deprecated references kept for compatibility but not used in Client Intake)
 
 interface IntakePayload {
     memberData: Omit<Partial<Member>, 'id' | 'accountBalance' | 'lastBilledPeriodIndex' | 'hasOutstandingBalance'>;
@@ -165,8 +238,8 @@ interface IntakePayload {
 }
 
 export const callIntakeMember = async (memberData: Partial<Member>, sponsorshipData?: Partial<Sponsorship>) => {
-    const intakeMember = httpsCallable<IntakePayload, { success: boolean; message?: string }>(functions, 'intakeMember');
-    await intakeMember({ memberData, sponsorshipData });
+    // Redirect to client-side logic
+    return createMember(memberData, sponsorshipData);
 };
 
 export const callExitMember = async (memberId: string, exitDate: string, reason: string, note?: string) => {
