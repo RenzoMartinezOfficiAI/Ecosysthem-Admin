@@ -10,7 +10,8 @@ import {
   serverTimestamp,
   QueryConstraint,
   onSnapshot,
-  runTransaction
+  runTransaction,
+  writeBatch
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../lib/firebase';
@@ -191,6 +192,7 @@ export async function createMember(memberData: Partial<Member>, sponsorshipData?
         
         // Ledger Defaults
         lastBilledPeriodIndex: -1,
+        lastBilledThrough: undefined,
         accountBalance: 0,
         hasOutstandingBalance: false,
         
@@ -243,6 +245,45 @@ export const callIntakeMember = async (memberData: Partial<Member>, sponsorshipD
 };
 
 export const callExitMember = async (memberId: string, exitDate: string, reason: string, note?: string) => {
-    const exitMemberFlow = httpsCallable(functions, 'exitMemberFlow');
-    await exitMemberFlow({ memberId, exitDate, reason, note });
+    // Client-side implementation to replace Cloud Function
+    try {
+        const batch = writeBatch(db);
+        const now = new Date().toISOString();
+
+        // 1. Get Member for Notes
+        const memberRef = doc(db, 'members', memberId);
+        const memberSnap = await getDoc(memberRef);
+        if (!memberSnap.exists()) throw new Error("Member not found");
+        
+        const memberData = memberSnap.data();
+        const currentNotes = memberData.notes || '';
+        const exitNote = `Exit Reason: ${reason}. ${note ? `Note: ${note}` : ''}`;
+        const newNotes = currentNotes ? `${currentNotes}\n\n[${exitDate}] ${exitNote}` : `[${exitDate}] ${exitNote}`;
+
+        batch.update(memberRef, {
+            status: 'INACTIVE',
+            exitDate: exitDate,
+            notes: newNotes,
+            updatedAt: now
+        });
+
+        // 2. Deactivate Sponsorships
+        const sponsorshipsRef = collection(db, 'sponsorships');
+        const q = query(sponsorshipsRef, where('memberId', '==', memberId), where('isActive', '==', true));
+        const querySnapshot = await getDocs(q);
+
+        querySnapshot.forEach((doc) => {
+            batch.update(doc.ref, {
+                isActive: false,
+                endDate: exitDate,
+                updatedAt: now
+            });
+        });
+
+        await batch.commit();
+        
+    } catch (error: any) {
+        console.error("Exit Error:", error);
+        throw new Error(`Failed to exit member: ${error.message}`);
+    }
 };
