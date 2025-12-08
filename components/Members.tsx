@@ -250,6 +250,120 @@ const Members: React.FC<MembersProps> = ({ members: initialMembers, houses, user
         </div>
       </div>
 
+       {/* INTAKE MODAL */}
+       {showIntake && (
+        <div className="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6 border-b border-slate-200">
+                    <h3 className="text-xl font-bold text-slate-900">Intake New Member</h3>
+                </div>
+                <form onSubmit={handleIntakeSubmit} className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                            <label className="block text-sm font-medium text-slate-700">Full Name</label>
+                            <input required type="text" className="mt-1 w-full border border-slate-300 rounded-md p-2"
+                                value={intakeForm.fullName} onChange={e => setIntakeForm({...intakeForm, fullName: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700">Email (Optional)</label>
+                            <input type="email" className="mt-1 w-full border border-slate-300 rounded-md p-2"
+                                value={intakeForm.email} onChange={e => setIntakeForm({...intakeForm, email: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700">Phone (Optional)</label>
+                            <input type="tel" className="mt-1 w-full border border-slate-300 rounded-md p-2"
+                                value={intakeForm.phone} onChange={e => setIntakeForm({...intakeForm, phone: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700">Date of Birth</label>
+                            <input type="date" className="mt-1 w-full border border-slate-300 rounded-md p-2"
+                                value={intakeForm.dateOfBirth} onChange={e => setIntakeForm({...intakeForm, dateOfBirth: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700">Intake Date</label>
+                            <input type="date" required className="mt-1 w-full border border-slate-300 rounded-md p-2"
+                                value={intakeForm.intakeDate} onChange={e => setIntakeForm({...intakeForm, intakeDate: e.target.value})} />
+                        </div>
+                        <div>
+                             <label className="block text-sm font-medium text-slate-700">Type</label>
+                             <select className="mt-1 w-full border border-slate-300 rounded-md p-2"
+                                value={intakeForm.label} onChange={e => setIntakeForm({...intakeForm, label: e.target.value as any})}>
+                                <option value={MemberLabel.MEMBER}>Member</option>
+                                <option value={MemberLabel.PATIENT}>Patient</option>
+                                <option value={MemberLabel.BOTH}>Both</option>
+                             </select>
+                        </div>
+                        
+                        <div className="col-span-2 border-t border-slate-100 pt-4 mt-2">
+                            <h4 className="text-sm font-bold text-slate-900 mb-3">Financial Setup</h4>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700">Pay Type</label>
+                            <select className="mt-1 w-full border border-slate-300 rounded-md p-2"
+                                value={intakeForm.payType} onChange={e => setIntakeForm({...intakeForm, payType: e.target.value as any})}>
+                                <option value={PayType.SELF_PAY}>Self Pay</option>
+                                <option value={PayType.SPONSORED}>Sponsored</option>
+                                <option value={PayType.MIXED}>Mixed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700">Monthly Bed Rate ($)</label>
+                            <input required type="number" className="mt-1 w-full border border-slate-300 rounded-md p-2"
+                                value={intakeForm.bedRateMonthly} onChange={e => setIntakeForm({...intakeForm, bedRateMonthly: parseFloat(e.target.value)})} />
+                        </div>
+                    </div>
+                    
+                    {(intakeForm.payType === PayType.SPONSORED || intakeForm.payType === PayType.MIXED) && (
+                        <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 space-y-3">
+                             <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider">Sponsorship Details</h4>
+                             <div>
+                                <label className="block text-xs font-medium text-indigo-900">Sponsor Name</label>
+                                <input type="text" className="mt-1 w-full border border-indigo-200 rounded p-1 text-sm"
+                                    value={sponsorshipForm.sponsorName} onChange={e => setSponsorshipForm({...sponsorshipForm, sponsorName: e.target.value})} />
+                             </div>
+                             <div>
+                                <label className="block text-xs font-medium text-indigo-900">Total Coverage Amount ($)</label>
+                                <input type="number" className="mt-1 w-full border border-indigo-200 rounded p-1 text-sm"
+                                    value={sponsorshipForm.totalAmount} onChange={e => setSponsorshipForm({...sponsorshipForm, totalAmount: parseFloat(e.target.value)})} />
+                             </div>
+                        </div>
+                    )}
+
+                    <div className="col-span-2 border-t border-slate-100 pt-4 mt-2">
+                         <h4 className="text-sm font-bold text-slate-900 mb-3">Emergency Contact</h4>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                             <input type="text" placeholder="Name" className="border border-slate-300 rounded-md p-2 text-sm"
+                                value={emergencyContact.name} onChange={e => setEmergencyContact({...emergencyContact, name: e.target.value})} />
+                             <input type="text" placeholder="Relationship" className="border border-slate-300 rounded-md p-2 text-sm"
+                                value={emergencyContact.relationship} onChange={e => setEmergencyContact({...emergencyContact, relationship: e.target.value})} />
+                             <input type="tel" placeholder="Phone" className="border border-slate-300 rounded-md p-2 text-sm"
+                                value={emergencyContact.phone} onChange={e => setEmergencyContact({...emergencyContact, phone: e.target.value})} />
+                         </div>
+                    </div>
+
+                    <div className="flex items-center space-x-6 pt-2">
+                        <label className="flex items-center space-x-2 text-sm text-slate-700">
+                            <input type="checkbox" checked={intakeForm.isVeteran} onChange={e => setIntakeForm({...intakeForm, isVeteran: e.target.checked})} />
+                            <span>Veteran?</span>
+                        </label>
+                        <label className="flex items-center space-x-2 text-sm text-slate-700">
+                            <input type="checkbox" checked={intakeForm.mediaRelease} onChange={e => setIntakeForm({...intakeForm, mediaRelease: e.target.checked})} />
+                            <span>Media Release?</span>
+                        </label>
+                    </div>
+
+                    <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-slate-100">
+                        <button type="button" onClick={() => setShowIntake(false)} className="px-4 py-2 text-slate-600 hover:text-slate-800">Cancel</button>
+                        <button type="submit" disabled={loading} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                            {loading ? 'Processing...' : 'Complete Intake'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      )}
+
       {/* DETAILS MODAL */}
       {showDetails && selectedMember && (
         <div className="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center z-50 p-4">

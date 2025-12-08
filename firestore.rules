@@ -48,6 +48,8 @@ service cloud.firestore {
       // Only Admins/Ops can create/delete members? Or Leads too?
       // Usually Leads need to see, maybe update notes.
       // Let's allow Leads to read, but strict writes.
+      allow create: if isOpsManager();
+      allow update: if isOpsManager();
       allow write: if isOpsManager(); 
     }
 
