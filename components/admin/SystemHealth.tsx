@@ -1,12 +1,11 @@
 
 import React, { useState } from 'react';
 import { SystemError, WorkOrder, InventoryItem } from '../../types';
-import { MOCK_SYSTEM_ERRORS, MOCK_INVENTORY, MOCK_WORK_ORDERS } from '../../services/mockData';
 
 const SystemHealth: React.FC = () => {
-  const [errors, setErrors] = useState<SystemError[]>(MOCK_SYSTEM_ERRORS);
-  const [workOrders] = useState<WorkOrder[]>(MOCK_WORK_ORDERS);
-  const [inventory] = useState<InventoryItem[]>(MOCK_INVENTORY);
+  const [errors, setErrors] = useState<SystemError[]>([]);
+  const [workOrders] = useState<WorkOrder[]>([]);
+  const [inventory] = useState<InventoryItem[]>([]);
 
   const criticalErrors = errors.filter(e => e.severity === 'CRITICAL' && !e.resolved);
   const warningErrors = errors.filter(e => e.severity === 'WARNING' && !e.resolved);

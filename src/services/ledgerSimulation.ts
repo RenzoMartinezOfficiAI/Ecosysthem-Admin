@@ -1,15 +1,14 @@
 import { Member, BedCharge, SponsorshipCharge, MemberPayment, MemberAdjustment, Sponsorship, MemberStatus, SystemError, PayType, MemberMonthlySummary } from '../../types';
 import { calculateBillablePeriods, getBillingPeriod } from '../utils/billingMath';
-import { MOCK_MEMBERS, MOCK_SPONSORSHIPS, MOCK_TRANSACTIONS, MOCK_SYSTEM_ERRORS } from '../../services/mockData';
 
 // In-Memory Storage for Simulation
-let simMembers = JSON.parse(JSON.stringify(MOCK_MEMBERS)) as Member[];
-let simSponsorships = JSON.parse(JSON.stringify(MOCK_SPONSORSHIPS)) as Sponsorship[];
-let simBedCharges: BedCharge[] = MOCK_TRANSACTIONS.filter((t: any) => 'bedRateAtTime' in t) as BedCharge[];
-let simPayments: MemberPayment[] = MOCK_TRANSACTIONS.filter((t: any) => 'source' in t) as MemberPayment[];
+let simMembers: Member[] = [];
+let simSponsorships: Sponsorship[] = [];
+let simBedCharges: BedCharge[] = [];
+let simPayments: MemberPayment[] = [];
 let simSponsorshipCharges: SponsorshipCharge[] = [];
 let simAdjustments: MemberAdjustment[] = [];
-let simErrors: SystemError[] = JSON.parse(JSON.stringify(MOCK_SYSTEM_ERRORS)) as SystemError[];
+let simErrors: SystemError[] = [];
 let simSummaries: MemberMonthlySummary[] = []; // Phase C
 
 export const getSimulatedData = () => {
@@ -259,12 +258,12 @@ export const compareLegacyAndLedgerBalances = async () => {
 };
 
 export const resetSimulation = () => {
-    simMembers = JSON.parse(JSON.stringify(MOCK_MEMBERS));
-    simSponsorships = JSON.parse(JSON.stringify(MOCK_SPONSORSHIPS));
-    simBedCharges = MOCK_TRANSACTIONS.filter((t: any) => 'bedRateAtTime' in t) as BedCharge[];
-    simPayments = MOCK_TRANSACTIONS.filter((t: any) => 'source' in t) as MemberPayment[];
+    simMembers = [];
+    simSponsorships = [];
+    simBedCharges = [];
+    simPayments = [];
     simSponsorshipCharges = [];
     simAdjustments = [];
-    simErrors = JSON.parse(JSON.stringify(MOCK_SYSTEM_ERRORS));
+    simErrors = [];
     simSummaries = [];
 };

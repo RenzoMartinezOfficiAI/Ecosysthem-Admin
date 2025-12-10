@@ -14,7 +14,6 @@ import Profile from './components/Profile';
 import { HousingAssignment } from './components/HousingAssignment'; 
 import { useAuth } from './src/context/AuthContext';
 import { UserRole } from './types';
-import { MOCK_SYSTEM_ERRORS, MOCK_SPONSORSHIPS } from './services/mockData';
 import { useHouses } from './src/hooks/useHouses'; 
 import { useMembers } from './src/hooks/useMembers';
 
@@ -28,9 +27,9 @@ const App: React.FC = () => {
   const { houses, loading: housesLoading, error: housesError } = useHouses();
   const { members, loading: membersLoading, error: membersError } = useMembers(); 
   
-  // Static/Mock data for parts not yet fully backend-integrated
-  const [errors] = useState(MOCK_SYSTEM_ERRORS);
-  const [sponsorships] = useState(MOCK_SPONSORSHIPS);
+  // Empty state for now since mock data is removed
+  const [errors] = useState([]);
+  const [sponsorships] = useState([]);
 
   // Loading Screen
   if (authLoading || (user && (membersLoading || housesLoading))) {

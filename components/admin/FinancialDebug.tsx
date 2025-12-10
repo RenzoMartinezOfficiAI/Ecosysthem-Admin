@@ -59,7 +59,7 @@ const FinancialDebug: React.FC<FinancialDebugProps> = ({ userRole }) => {
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex justify-between items-center bg-slate-900 text-white p-6 rounded-xl shadow-lg">
         <div>
-           <h2 className="text-xl font-bold">Phase C: Financial Debugger</h2>
+           <h2 className="text-xl font-bold">Financial Debugger</h2>
            <p className="text-slate-400 text-sm">Ledger Only • Strict Flow Testing</p>
         </div>
         <button onClick={handleReset} className="px-3 py-1 bg-slate-800 border border-slate-700 rounded text-xs hover:bg-rose-900 hover:border-rose-700 transition-colors">

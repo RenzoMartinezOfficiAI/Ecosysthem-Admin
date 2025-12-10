@@ -16,6 +16,7 @@ import {
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../lib/firebase';
 import type { Member, MemberStatus, PayType, MemberIncomeSource, EmergencyContact, Sponsorship, MemberLabel } from '../../types';
+import { calculateBilling } from '../utils/billingLogic';
 
 const membersCol = collection(db, 'members');
 
@@ -245,18 +246,64 @@ export const callIntakeMember = async (memberData: Partial<Member>, sponsorshipD
 };
 
 export const callExitMember = async (memberId: string, exitDate: string, reason: string, note?: string) => {
-    // Client-side implementation to replace Cloud Function
+    // Client-side implementation to replace Cloud Function (with full Billing logic)
     try {
         const batch = writeBatch(db);
         const now = new Date().toISOString();
 
-        // 1. Get Member for Notes
+        // 1. Get Member
         const memberRef = doc(db, 'members', memberId);
         const memberSnap = await getDoc(memberRef);
         if (!memberSnap.exists()) throw new Error("Member not found");
         
-        const memberData = memberSnap.data();
-        const currentNotes = memberData.notes || '';
+        // Use converter to ensure full Member object structure
+        const member = memberConverter(memberSnap.data(), memberId);
+        
+        // VALIDATION: Ensure exit date is valid relative to billing
+        const limitDate = member.lastBilledThrough || member.intakeDate;
+        
+        if (limitDate && new Date(exitDate) < new Date(limitDate)) {
+             throw new Error(`Exit date (${exitDate}) cannot be before last billed/intake date (${limitDate}).`);
+        }
+
+        // 2. Fetch Active Sponsorships for Billing
+        const sponsorshipsRef = collection(db, 'sponsorships');
+        const q = query(sponsorshipsRef, where('memberId', '==', memberId), where('isActive', '==', true));
+        const spSnap = await getDocs(q);
+        const sponsorships = spSnap.docs.map(d => ({ id: d.id, ...d.data() } as Sponsorship));
+
+        // 3. Calculate Billing
+        const billingResult = calculateBilling(member, sponsorships, exitDate);
+
+        // 4. Apply Billing Writes to Batch
+        
+        // Bed Charges
+        billingResult.newCharges.forEach(charge => {
+            const chargeRef = doc(collection(db, 'bedCharges'), charge.id); 
+            batch.set(chargeRef, charge);
+        });
+
+        // Sponsorship Charges
+        billingResult.newSponsorshipCharges.forEach(spCharge => {
+            const spChargeRef = doc(collection(db, 'sponsorshipCharges'), spCharge.id);
+            batch.set(spChargeRef, spCharge);
+        });
+
+        // Update Sponsorships (Remaining Amount)
+        billingResult.updatedSponsorships.forEach(sp => {
+           const original = sponsorships.find(s => s.id === sp.id);
+           if (original && original.remainingAmount !== sp.remainingAmount) {
+               const spRef = doc(db, 'sponsorships', sp.id);
+               // We will merge this with deactivation below if needed, but since we can't update twice in batch:
+               // We track state and do one update per sponsorship at the end.
+           }
+        });
+
+        const netChange = billingResult.totalCharges - billingResult.totalCovered;
+        const currentBalance = member.accountBalance - netChange;
+
+        // 5. Update Member (Status + Billing + Notes)
+        const currentNotes = member.notes || '';
         const exitNote = `Exit Reason: ${reason}. ${note ? `Note: ${note}` : ''}`;
         const newNotes = currentNotes ? `${currentNotes}\n\n[${exitDate}] ${exitNote}` : `[${exitDate}] ${exitNote}`;
 
@@ -264,20 +311,32 @@ export const callExitMember = async (memberId: string, exitDate: string, reason:
             status: 'INACTIVE',
             exitDate: exitDate,
             notes: newNotes,
+            
+            lastBilledPeriodIndex: billingResult.newLastBilledIndex,
+            lastBilledThrough: billingResult.newLastBilledThrough,
+            accountBalance: currentBalance,
+            hasOutstandingBalance: currentBalance < 0,
+            
             updatedAt: now
         });
 
-        // 2. Deactivate Sponsorships
-        const sponsorshipsRef = collection(db, 'sponsorships');
-        const q = query(sponsorshipsRef, where('memberId', '==', memberId), where('isActive', '==', true));
-        const querySnapshot = await getDocs(q);
-
-        querySnapshot.forEach((doc) => {
-            batch.update(doc.ref, {
-                isActive: false,
-                endDate: exitDate,
-                updatedAt: now
-            });
+        // 6. Deactivate Sponsorships (Merge with billing updates)
+        sponsorships.forEach(sp => {
+            const spRef = doc(db, 'sponsorships', sp.id);
+            const updates: any = {};
+            
+            // Check if updated in billing
+            const updatedSp = billingResult.updatedSponsorships.find(s => s.id === sp.id);
+            if (updatedSp && updatedSp.remainingAmount !== sp.remainingAmount) {
+                updates.remainingAmount = updatedSp.remainingAmount;
+            }
+            
+            // Deactivate
+            updates.isActive = false;
+            updates.endDate = exitDate;
+            updates.updatedAt = now;
+            
+            batch.update(spRef, updates);
         });
 
         await batch.commit();

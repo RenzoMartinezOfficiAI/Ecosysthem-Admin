@@ -1,17 +1,19 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { SystemError, Member } from "../types";
 
 // NOTE: In a real app, this key should be secure and likely proxies through a backend.
-// For this demo, we assume process.env.API_KEY is available.
-const apiKey = process.env.API_KEY || 'fake_key_for_demo'; 
-const ai = new GoogleGenAI({ apiKey });
+// For this demo, we assume import.meta.env.VITE_API_KEY is available.
+const apiKey = import.meta.env.VITE_API_KEY || 'fake_key_for_demo'; 
+const genAI = new GoogleGenerativeAI(apiKey);
 
 export const analyzeSystemError = async (error: SystemError): Promise<string> => {
-  if (!process.env.API_KEY) {
+  if (!import.meta.env.VITE_API_KEY) {
     return "Gemini API Key is missing. Please configure the environment.";
   }
 
   try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
     const prompt = `
       You are a technical support agent for a housing management system called EcosysTHEM.
       Analyze the following system error and provide a human-readable explanation and 3 steps for remediation.
@@ -24,12 +26,9 @@ export const analyzeSystemError = async (error: SystemError): Promise<string> =>
       Keep the tone professional and operational.
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
-
-    return response.text || "No analysis available.";
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text() || "No analysis available.";
   } catch (err) {
     console.error("Gemini API Error:", err);
     return "Failed to contact AI service for analysis.";
@@ -37,11 +36,13 @@ export const analyzeSystemError = async (error: SystemError): Promise<string> =>
 };
 
 export const summarizeMemberFinancials = async (member: Member, transactions: any[]): Promise<string> => {
-   if (!process.env.API_KEY) {
+   if (!import.meta.env.VITE_API_KEY) {
     return "Gemini API Key is missing.";
   }
 
   try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
     const txSummary = transactions
       .filter(t => t.memberId === member.id)
       .map(t => `${t.createdAt}: ${'bedRateAtTime' in t ? 'CHARGE' : 'PAYMENT'} amount=${'amount' in t ? t.amount : t.bedRateAtTime}`)
@@ -62,55 +63,11 @@ export const summarizeMemberFinancials = async (member: Member, transactions: an
       Provide a brief status report (max 100 words) and highlight any immediate actions needed (e.g. collection).
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
-
-    return response.text || "No summary available.";
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text() || "No summary available.";
   } catch (err) {
     console.error("Gemini API Error:", err);
     return "Failed to generate summary.";
   }
 }
-
-export const summarizeFile = async (file: File): Promise<string> => {
-    if (!process.env.API_KEY) {
-        return "Gemini API Key missing.";
-    }
-
-    try {
-        // Convert file to base64
-        const base64Data = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => {
-                const result = reader.result as string;
-                // Remove data URL prefix (e.g., "data:image/png;base64,")
-                const base64 = result.split(',')[1];
-                resolve(base64);
-            };
-            reader.onerror = error => reject(error);
-        });
-
-        const prompt = `
-            Analyze this file. Provide a concise summary of its contents (max 50 words) 
-            and 3 key keywords or tags that describe it.
-        `;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: {
-                parts: [
-                    { inlineData: { mimeType: file.type, data: base64Data } },
-                    { text: prompt }
-                ]
-            }
-        });
-
-        return response.text || "No summary generated.";
-    } catch (error) {
-        console.error("Gemini File Summary Error:", error);
-        return "Could not generate AI summary for this file type.";
-    }
-};

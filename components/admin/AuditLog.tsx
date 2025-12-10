@@ -1,17 +1,13 @@
 
 import React, { useState } from 'react';
 import { AuditLogEntry } from '../../types';
-import { MOCK_AUDIT_LOGS } from '../../services/mockData';
 
 const AuditLog: React.FC = () => {
-  const [logs] = useState<AuditLogEntry[]>(MOCK_AUDIT_LOGS);
+  const [logs] = useState<AuditLogEntry[]>([]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h2 className="text-xl font-bold text-slate-900 mb-2">SOP Compliance Log</h2>
-          <p className="text-sm text-slate-500 mb-6">Tracking high-risk actions against Standard Operating Procedures.</p>
-
           <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200">
                   <thead className="bg-slate-50">
@@ -47,6 +43,13 @@ const AuditLog: React.FC = () => {
                               </td>
                           </tr>
                       ))}
+                      {logs.length === 0 && (
+                        <tr>
+                            <td colSpan={5} className="px-6 py-4 text-center text-sm text-slate-500">
+                                No audit logs found.
+                            </td>
+                        </tr>
+                      )}
                   </tbody>
               </table>
           </div>

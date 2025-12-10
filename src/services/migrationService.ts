@@ -1,6 +1,5 @@
 
 import { Member, MemberAdjustment } from '../../types';
-import { MOCK_MEMBERS } from '../../services/mockData';
 import { recordAdjustmentTx } from './ledgerSimulation'; // Simulating using ledger writer
 
 export interface MigrationPlan {
@@ -14,25 +13,8 @@ export interface MigrationPlan {
 
 export const scanForMigrations = async (): Promise<MigrationPlan[]> => {
     // In a real app, this would query Firestore for members where legacyBalance != 0 and lastBilledPeriodIndex == -1
-    // For simulation, we use MOCK_MEMBERS
-    
-    return MOCK_MEMBERS.map(m => {
-        const legacy = m.legacyBalance || 0;
-        const ledger = m.accountBalance;
-        
-        // We only care if the ledger is clean (0) but legacy has history
-        // Or generally if they don't match and we want to align ledger to legacy as "Opening Balance"
-        const diff = legacy - ledger;
-
-        return {
-            memberId: m.id,
-            memberName: m.fullName,
-            legacyBalance: legacy,
-            ledgerBalance: ledger,
-            proposedAdjustment: diff, // We want to add 'diff' so ledger + diff = legacy
-            isValid: diff !== 0
-        };
-    }).filter(p => p.isValid);
+    // For simulation, we return empty array since mock data is removed
+    return [];
 };
 
 export const executeMigration = async (plans: MigrationPlan[]): Promise<{success: number, failed: number}> => {
