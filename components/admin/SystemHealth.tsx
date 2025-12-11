@@ -1,17 +1,38 @@
-
-import React, { useState } from 'react';
-import { SystemError, WorkOrder, InventoryItem } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { SystemError, WorkOrder, InventoryItem, House, Member } from '../../types';
+import { fetchHouses } from '../../src/services/houseService';
+import { fetchMembers } from '../../src/services/memberService';
 
 const SystemHealth: React.FC = () => {
   const [errors, setErrors] = useState<SystemError[]>([]);
   const [workOrders] = useState<WorkOrder[]>([]);
   const [inventory] = useState<InventoryItem[]>([]);
+  const [houses, setHouses] = useState<House[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+        try {
+            const h = await fetchHouses();
+            setHouses(h);
+            const m = await fetchMembers();
+            setMembers(m);
+        } catch(e) {
+            console.error("Failed to load system data", e);
+        }
+    };
+    fetchData();
+  }, []);
 
   const criticalErrors = errors.filter(e => e.severity === 'CRITICAL' && !e.resolved);
   const warningErrors = errors.filter(e => e.severity === 'WARNING' && !e.resolved);
   
   const emergencyWorkOrders = workOrders.filter(wo => wo.priority === 'EMERGENCY' && wo.status !== 'COMPLETED');
   const criticalInventory = inventory.filter(i => i.quantity === 0);
+
+  // Derived Metrics
+  const offlineHouses = houses.filter(h => h.status === 'OFFLINE');
+  const membersWithBalance = members.filter(m => m.hasOutstandingBalance);
 
   const handleResolveError = (id: string) => {
       if(confirm("Mark this error as resolved?")) {
@@ -40,16 +61,16 @@ const SystemHealth: React.FC = () => {
                   {emergencyWorkOrders.length}
               </div>
           </div>
-          <div className={`p-4 rounded-lg border ${criticalInventory.length > 0 ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'}`}>
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Stockouts</div>
-              <div className={`text-3xl font-bold mt-2 ${criticalInventory.length > 0 ? 'text-amber-600' : 'text-slate-700'}`}>
-                  {criticalInventory.length}
+          <div className={`p-4 rounded-lg border ${offlineHouses.length > 0 ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'}`}>
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Offline Houses</div>
+              <div className={`text-3xl font-bold mt-2 ${offlineHouses.length > 0 ? 'text-amber-600' : 'text-slate-700'}`}>
+                  {offlineHouses.length}
               </div>
           </div>
-          <div className="p-4 rounded-lg border bg-white border-slate-200">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Billing Warnings</div>
-              <div className="text-3xl font-bold mt-2 text-slate-700">
-                  {warningErrors.length}
+          <div className={`p-4 rounded-lg border ${membersWithBalance.length > 0 ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'}`}>
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Members Owing Balance</div>
+              <div className={`text-3xl font-bold mt-2 ${membersWithBalance.length > 0 ? 'text-blue-600' : 'text-slate-700'}`}>
+                  {membersWithBalance.length}
               </div>
           </div>
       </div>
@@ -95,7 +116,9 @@ const SystemHealth: React.FC = () => {
                   <h3 className="font-bold text-slate-800">Operational Attention Needed</h3>
               </div>
               <div className="divide-y divide-slate-100 max-h-[400px] overflow-auto">
-                  {emergencyWorkOrders.map(wo => (
+                  {emergencyWorkOrders.map(wo => {
+                      const house = houses.find(h => h.id === wo.houseId);
+                      return (
                       <div key={wo.id} className="p-4 hover:bg-slate-50">
                            <div className="flex items-start gap-3">
                                 <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
@@ -103,12 +126,28 @@ const SystemHealth: React.FC = () => {
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-bold text-slate-900">{wo.title}</h4>
-                                    <p className="text-xs text-slate-500">House: {wo.houseId}</p>
+                                    <p className="text-xs text-slate-500">House: {house ? house.name : wo.houseId}</p>
                                     <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wide text-orange-600 bg-orange-50 px-2 py-0.5 rounded">Emergency Work Order</span>
                                 </div>
                            </div>
                       </div>
+                  )})}
+                  
+                  {offlineHouses.map(house => (
+                      <div key={house.id} className="p-4 hover:bg-slate-50">
+                           <div className="flex items-start gap-3">
+                                <div className="p-2 bg-rose-100 text-rose-600 rounded-lg">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-900">House Offline: {house.name}</h4>
+                                    <p className="text-xs text-slate-500">{house.address}</p>
+                                    <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wide text-rose-600 bg-rose-50 px-2 py-0.5 rounded">Action Required</span>
+                                </div>
+                           </div>
+                      </div>
                   ))}
+
                   {criticalInventory.map(inv => (
                       <div key={inv.id} className="p-4 hover:bg-slate-50">
                            <div className="flex items-start gap-3">
@@ -123,7 +162,7 @@ const SystemHealth: React.FC = () => {
                            </div>
                       </div>
                   ))}
-                  {emergencyWorkOrders.length === 0 && criticalInventory.length === 0 && (
+                  {emergencyWorkOrders.length === 0 && criticalInventory.length === 0 && offlineHouses.length === 0 && (
                       <div className="p-8 text-center text-slate-400">No operational emergencies.</div>
                   )}
               </div>

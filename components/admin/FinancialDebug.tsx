@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { UserRole, Member, BedCharge, SponsorshipCharge, MemberPayment } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { UserRole, Member, House } from '../../types';
 import { runBillingSimulation, getSimulatedData, resetSimulation, recordPaymentTx } from '../../src/services/ledgerSimulation';
+import { fetchMembers } from '../../src/services/memberService';
+import { fetchHouses } from '../../src/services/houseService';
 
 interface FinancialDebugProps {
   userRole: UserRole;
@@ -10,9 +12,25 @@ const FinancialDebug: React.FC<FinancialDebugProps> = ({ userRole }) => {
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [data, setData] = useState(getSimulatedData());
   const [loading, setLoading] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [houses, setHouses] = useState<House[]>([]);
   
   // Test Inputs
   const [paymentAmount, setPaymentAmount] = useState('100');
+
+  useEffect(() => {
+    const loadData = async () => {
+        try {
+            const memberData = await fetchMembers();
+            setMembers(memberData);
+            const houseData = await fetchHouses();
+            setHouses(houseData);
+        } catch(e) {
+            console.error("Failed to load members/houses", e);
+        }
+    };
+    loadData();
+  }, []);
 
   const refreshData = () => {
     setData({ ...getSimulatedData() });
@@ -53,7 +71,9 @@ const FinancialDebug: React.FC<FinancialDebugProps> = ({ userRole }) => {
     return <div className="p-8 text-center text-slate-500">Access Denied: Admin Only Area</div>;
   }
 
-  const member = data.members.find(m => m.id === selectedMemberId);
+  // Find member in either simulated data or real member list
+  const member = data.members.find(m => m.id === selectedMemberId) || members.find(m => m.id === selectedMemberId);
+  const house = member ? houses.find(h => h.id === member.houseId) : null;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -78,9 +98,13 @@ const FinancialDebug: React.FC<FinancialDebugProps> = ({ userRole }) => {
               className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm"
             >
               <option value="">-- Select Member --</option>
-              {data.members.map(m => (
+              {members.map(m => (
                 <option key={m.id} value={m.id}>{m.fullName}</option>
               ))}
+              {/* Also show simulated members if any */}
+               {data.members.filter(m => !members.find(real => real.id === m.id)).map(m => (
+                 <option key={m.id} value={m.id}>{m.fullName} (Simulated)</option>
+               ))}
             </select>
             
             {member && (
@@ -91,6 +115,7 @@ const FinancialDebug: React.FC<FinancialDebugProps> = ({ userRole }) => {
                             ${member.accountBalance}
                         </div>
                         <div className="text-xs text-slate-500 mt-1">Status: {member.status}</div>
+                         {house && <div className="text-xs text-slate-500">House: {house.name}</div>}
                     </div>
                     
                     <div className="border-t border-slate-100 pt-4">

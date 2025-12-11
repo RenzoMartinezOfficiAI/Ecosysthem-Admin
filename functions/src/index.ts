@@ -38,12 +38,21 @@ const ADMIN_OPS = ['ADMIN', 'OPERATIONS_MANAGER'];
 // Helper to safely get config
 const getGeminiKey = () => {
     const fromEnv = process.env.GEMINI_API_KEY;
-    if (fromEnv) return fromEnv;
-    try {
-        return (config as any)().gemini?.key;
-    } catch (e) {
-        return undefined;
+    if (fromEnv) {
+        console.log("Found GEMINI_API_KEY in env");
+        return fromEnv;
     }
+    try {
+        const conf = (config as any)();
+        if (conf.gemini && conf.gemini.key) {
+             console.log("Found gemini.key in functions config");
+             return conf.gemini.key;
+        }
+    } catch (e) {
+        console.warn("Failed to read functions config", e);
+    }
+    console.warn("No Gemini API Key found in env or config");
+    return undefined;
 }
 
 // --- GEMINI AI SERVICES ---
@@ -57,7 +66,8 @@ export const analyzeSystemError = https.onCall(async (data, context) => {
 
     if (!apiKey) {
         console.error("Gemini API Key missing in environment variables.");
-        return "AI Analysis unavailable (Missing Configuration).";
+        // Return a friendly string instead of throwing, so the UI can display it
+        return "AI Analysis unavailable (Missing API Key Configuration).";
     }
 
     try {
@@ -82,7 +92,8 @@ export const analyzeSystemError = https.onCall(async (data, context) => {
     } catch (err: any) {
         console.error("Gemini API Error:", err);
         await logSystemError('AI_ANALYSIS_ERROR', err.message, { errorId: error.id });
-        throw new https.HttpsError('internal', "Failed to analyze error.");
+        // Propagate the actual error message for better debugging
+        throw new https.HttpsError('internal', `Gemini Analysis Failed: ${err.message}`);
     }
 });
 
@@ -90,40 +101,33 @@ export const summarizeMemberFinancials = https.onCall(async (data, context) => {
     checkAuth(context, ADMIN_OPS);
     const { member, transactions } = data;
 
-    const apiKey = getGeminiKey();
-    if (!apiKey) {
-         return "Summary unavailable (Missing Configuration).";
-    }
-
+    // Logic-based summary (Replaces AI interpretation to avoid errors/dependencies)
     try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const balanceStatus = member.accountBalance < 0 
+            ? `owes $${Math.abs(member.accountBalance).toFixed(2)}` 
+            : `has a credit of $${member.accountBalance.toFixed(2)}`;
+        
+        let summary = `${member.fullName} (${member.status}) ${balanceStatus}. Pay Type: ${member.payType}.`;
 
-        const txSummary = transactions
-          .map((t: any) => `${t.createdAt}: ${'bedRateAtTime' in t ? 'CHARGE' : 'PAYMENT'} amount=${'amount' in t ? t.amount : t.bedRateAtTime}`)
-          .join('\n');
-    
-        const prompt = `
-          You are a financial operations assistant.
-          Summarize the financial standing of this member.
-          
-          Member: ${member.fullName} (${member.status})
-          Pay Type: ${member.payType}
-          Balance: $${member.accountBalance}
-          Outstanding: ${member.hasOutstandingBalance}
-          
-          Recent Transactions:
-          ${txSummary}
-    
-          Provide a brief status report (max 100 words) and highlight any immediate actions needed (e.g. collection).
-        `;
-    
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
+        if (member.hasOutstandingBalance) {
+            summary += ` Account is in arrears.`;
+        }
+
+        if (transactions && transactions.length > 0) {
+            const lastTx = transactions[0]; // Assumes sorted desc
+            const type = 'bedRateAtTime' in lastTx ? 'Charge' : 'Payment';
+            const amount = 'amount' in lastTx ? lastTx.amount : lastTx.bedRateAtTime;
+            const dateStr = lastTx.createdAt ? lastTx.createdAt.split('T')[0] : 'Unknown Date';
+            
+            summary += ` Last activity: ${type} of $${Number(amount).toFixed(2)} on ${dateStr}.`;
+        } else {
+            summary += ` No recent transactions recorded.`;
+        }
+
+        return summary;
     } catch (err: any) {
-        console.error("Gemini API Error:", err);
-        throw new https.HttpsError('internal', "Failed to generate summary.");
+        console.error("Summary Generation Error:", err);
+        return "Unable to generate financial summary.";
     }
 });
 
@@ -162,7 +166,7 @@ export const summarizeFile = https.onCall(async (data, context) => {
         return response.text();
     } catch (err: any) {
         console.error("Gemini File Summary Error:", err);
-        return "Failed to summarize file.";
+        return `Failed to summarize file: ${err.message}`;
     }
 });
 
