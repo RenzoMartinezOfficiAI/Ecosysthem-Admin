@@ -151,7 +151,7 @@ const Profile: React.FC = () => {
       // 2. Generate AI Summary (if supported type)
       let summary = "Pending analysis...";
       if (file.type.startsWith('image/') || file.type === 'application/pdf' || file.type.startsWith('text/')) {
-          summary = await summarizeFile(file);
+          summary = await summarizeFile(storageRef.fullPath, file.type);
       } else {
           summary = "AI Summary not supported for this file type.";
       }
