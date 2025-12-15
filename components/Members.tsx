@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Member, MemberStatus, PayType, UserRole, House, MemberLabel, Sponsorship, EmergencyContact } from '../types';
 import { FEATURE_FLAGS } from '../src/config/featureFlags';
-import { callIntakeMember, callExitMember, updateMember, UpdateMemberInput } from '../src/services/memberService';
+import { callIntakeMember, updateMember, UpdateMemberInput } from '../src/services/memberService';
 
 interface MembersProps {
   members: Member[];
@@ -18,7 +18,6 @@ const Members: React.FC<MembersProps> = ({ members: initialMembers, houses, user
 
   // Modals
   const [showIntake, setShowIntake] = useState(false);
-  const [showExit, setShowExit] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -49,13 +48,6 @@ const Members: React.FC<MembersProps> = ({ members: initialMembers, houses, user
   const [sponsorshipForm, setSponsorshipForm] = useState<Partial<Sponsorship>>({
       sponsorName: '', totalAmount: 0, priority: 1, startDate: new Date().toISOString().split('T')[0]
   });
-  
-  // --- EXIT STATE ---
-  const [exitForm, setExitForm] = useState({
-      exitDate: new Date().toISOString().split('T')[0],
-      reason: '',
-      note: ''
-  });
 
   const resetIntakeForm = () => {
       setIntakeForm({
@@ -83,8 +75,7 @@ const Members: React.FC<MembersProps> = ({ members: initialMembers, houses, user
           mediaRelease: member.mediaRelease,
           notes: member.notes,
           emergencyContact: member.emergencyContact ? { ...member.emergencyContact } : undefined,
-          // House ID is handled via Housing Assignment tool mostly, but can allow edit here if desired
-          // houseId: member.houseId
+          status: member.status // Important to track current status in form if we want to change it
       });
       setIsEditing(false);
       setShowDetails(true);
@@ -120,21 +111,6 @@ const Members: React.FC<MembersProps> = ({ members: initialMembers, houses, user
       } catch (err: any) {
           console.error(err);
           alert(err.message || "Intake failed");
-      } finally {
-          setLoading(false);
-      }
-  };
-
-  const handleExitSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!selectedMemberId) return;
-      setLoading(true);
-      try {
-          await callExitMember(selectedMemberId, exitForm.exitDate, exitForm.reason, exitForm.note);
-          setShowExit(false);
-      } catch (err: any) {
-          console.error(err);
-          alert(err.message || "Exit failed");
       } finally {
           setLoading(false);
       }
@@ -210,7 +186,9 @@ const Members: React.FC<MembersProps> = ({ members: initialMembers, houses, user
                         </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(member.status)}`}>
+                        <span 
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(member.status)}`}
+                        >
                             {member.status}
                         </span>
                         </td>
@@ -226,14 +204,6 @@ const Members: React.FC<MembersProps> = ({ members: initialMembers, houses, user
                         </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                        {member.status === MemberStatus.ACTIVE && canEdit && (
-                            <button 
-                                    onClick={() => { setSelectedMemberId(member.id); setShowExit(true); }}
-                                    className="text-rose-600 hover:text-rose-900"
-                            >
-                                    Exit
-                            </button>
-                        )}
                         <button 
                             onClick={() => handleOpenDetails(member)}
                             className="text-indigo-600 hover:text-indigo-900"
@@ -435,9 +405,21 @@ const Members: React.FC<MembersProps> = ({ members: initialMembers, houses, user
                         <div className="bg-slate-50 p-4 rounded-lg">
                             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Status & Housing</h4>
                             <div className="space-y-1 text-sm">
-                                <div className="flex justify-between">
+                                <div className="flex justify-between items-center h-6">
                                     <span className="text-slate-500">Status:</span> 
-                                    <span className={`font-medium ${selectedMember.status === 'ACTIVE' ? 'text-emerald-600' : 'text-slate-600'}`}>{selectedMember.status}</span>
+                                    {isEditing ? (
+                                        <select 
+                                            className="text-xs border border-slate-300 rounded p-0.5"
+                                            value={editForm.status}
+                                            onChange={(e) => setEditForm({ ...editForm, status: e.target.value as MemberStatus })}
+                                        >
+                                            <option value={MemberStatus.ACTIVE}>Active</option>
+                                            <option value={MemberStatus.INACTIVE}>Inactive</option>
+                                            <option value={MemberStatus.PENDING}>Pending</option>
+                                        </select>
+                                    ) : (
+                                        <span className={`font-medium ${selectedMember.status === 'ACTIVE' ? 'text-emerald-600' : 'text-slate-600'}`}>{selectedMember.status}</span>
+                                    )}
                                 </div>
                                 <div className="flex justify-between items-center h-6">
                                     <span className="text-slate-500">Type:</span> 

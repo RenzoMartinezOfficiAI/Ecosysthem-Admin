@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserRole, SystemError } from '../../types';
-import { compareLegacyAndLedgerBalances } from '../../src/services/ledgerSimulation';
+import { scanForMigrations } from '../../src/services/migrationService';
 
 interface FinancialIntegrityProps {
   userRole: UserRole;
@@ -18,8 +18,18 @@ const FinancialIntegrity: React.FC<FinancialIntegrityProps> = ({ userRole }) => 
   const handleRunComparison = async () => {
     setLoading(true);
     try {
-      const results = await compareLegacyAndLedgerBalances();
-      setDiscrepancies(results);
+      // Reusing the migration scanner as it performs the exact Legacy vs Ledger check we need
+      const plans = await scanForMigrations();
+      
+      const formattedResults = plans.map(p => ({
+          memberId: p.memberId,
+          name: p.memberName,
+          legacy: p.legacyBalance,
+          ledger: p.ledgerBalance,
+          diff: p.proposedAdjustment
+      }));
+
+      setDiscrepancies(formattedResults);
       setLastRun(new Date().toLocaleString());
     } catch (e) {
       console.error(e);
@@ -33,7 +43,7 @@ const FinancialIntegrity: React.FC<FinancialIntegrityProps> = ({ userRole }) => 
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="bg-slate-900 text-white p-6 rounded-xl shadow-lg flex justify-between items-center">
         <div>
-            <h2 className="text-xl font-bold">Phase B: Financial Integrity Monitor</h2>
+            <h2 className="text-xl font-bold">Financial Integrity Monitor</h2>
             <p className="text-slate-400 text-sm">Shadow Ledger Verification & Drift Detection</p>
         </div>
         <div className="text-right">

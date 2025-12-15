@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Houses from './components/Houses';
+import MaintenanceConsole from './components/Maintenance/MaintenanceConsole';
 import Members from './components/Members';
 import Financials from './components/Financials';
 import FinancialDebug from './components/admin/FinancialDebug';
@@ -73,6 +74,8 @@ const App: React.FC = () => {
         return <Dashboard houses={houses} members={members} errors={errors} />;
       case 'houses':
         return <Houses houses={houses} userRole={currentUserRole} />;
+      case 'maintenance':
+        return <MaintenanceConsole houses={houses} userRole={currentUserRole} />;
       case 'housing-assignment':
         if (currentUserRole === UserRole.HOUSE_LEAD) return <Dashboard houses={houses} members={members} errors={errors} />;
         return <HousingAssignment />;

@@ -1,6 +1,7 @@
 
 import { Member, MemberAdjustment } from '../../types';
-import { recordAdjustmentTx } from './ledgerSimulation'; // Simulating using ledger writer
+import { db } from '../lib/firebase';
+import { collection, query, where, getDocs, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 
 export interface MigrationPlan {
     memberId: string;
@@ -12,9 +13,43 @@ export interface MigrationPlan {
 }
 
 export const scanForMigrations = async (): Promise<MigrationPlan[]> => {
-    // In a real app, this would query Firestore for members where legacyBalance != 0 and lastBilledPeriodIndex == -1
-    // For simulation, we return empty array since mock data is removed
-    return [];
+    // 1. Get all members with a legacy balance that haven't been migrated or have discrepencies
+    // For simplicity, we scan all active members and check legacyBalance vs current accountBalance
+    const membersRef = collection(db, 'members');
+    const q = query(membersRef, where('status', '==', 'ACTIVE')); // Only migrating active for now
+    const snapshot = await getDocs(q);
+
+    const plans: MigrationPlan[] = [];
+
+    for (const docSnap of snapshot.docs) {
+        const data = docSnap.data();
+        const legacyBalance = data.legacyBalance || 0;
+        const ledgerBalance = data.accountBalance || 0;
+
+        // Condition for migration:
+        // 1. If legacyBalance exists and is different from ledgerBalance
+        // 2. AND we assume the ledger starts at 0, so if ledger is 0 but legacy is not, we need to bring it over.
+        // Or simplified: If legacyBalance != ledgerBalance.
+        // NOTE: This assumes we want to OVERWRITE or ADJUST ledger to match legacy. 
+        // A safer approach for "Initial Migration" is: If lastBilledPeriodIndex == -1 and legacyBalance != 0.
+        
+        // Let's go with: bringing legacy balance as an opening balance adjustment if ledger is effectively empty or unsynced.
+        
+        const diff = legacyBalance - ledgerBalance;
+
+        if (Math.abs(diff) > 0.01) {
+            plans.push({
+                memberId: docSnap.id,
+                memberName: data.fullName,
+                legacyBalance: legacyBalance,
+                ledgerBalance: ledgerBalance,
+                proposedAdjustment: diff, // We add this to ledger to match legacy
+                isValid: true
+            });
+        }
+    }
+
+    return plans;
 };
 
 export const executeMigration = async (plans: MigrationPlan[]): Promise<{success: number, failed: number}> => {
@@ -23,21 +58,33 @@ export const executeMigration = async (plans: MigrationPlan[]): Promise<{success
 
     for (const plan of plans) {
         try {
-            // In a real app, we would call a dedicated migration Cloud Function.
-            // Here we simulate by recording an adjustment to bring balance in sync.
+            // Create an adjustment record
+            const adjustment: Omit<MemberAdjustment, 'id'> = {
+                memberId: plan.memberId,
+                amount: plan.proposedAdjustment,
+                reason: 'MIGRATION_OPENING_BALANCE',
+                note: `Imported from Legacy Balance ($${plan.legacyBalance})`,
+                effectiveDate: new Date().toISOString(),
+                createdByUserId: 'SYSTEM_MIGRATION', // Placeholder
+                createdAt: new Date().toISOString()
+            };
+
+            await addDoc(collection(db, 'adjustments'), adjustment);
+
+            // Update Member Balance
+            const memberRef = doc(db, 'members', plan.memberId);
             
-            // Note: Positive adjustment = Credit (reduces debt). Negative = Charge.
-            // If legacy is -150 (owed) and ledger is 0.
-            // We need ledger to be -150.
-            // adjustment amount: -150.
-            
-            // However, recordAdjustment logic might vary. 
-            // Usually: Adjustment Amount > 0 is CREDIT. Amount < 0 is CHARGE.
-            
-            // Using the simulation's recordAdjustmentTx 
-            
-            // Simulating a "System Adjustment"
-            await recordAdjustmentTx(plan.memberId, plan.proposedAdjustment, 'MIGRATION_ADJUSTMENT', 'Legacy Migration Opening Balance');
+            // We need to fetch fresh to ensure atomic update in real app, but for this tool:
+            // We just increment accountBalance by proposedAdjustment
+            const memberSnap = await getDoc(memberRef);
+            if(memberSnap.exists()) {
+                const currentBal = memberSnap.data().accountBalance || 0;
+                await updateDoc(memberRef, {
+                    accountBalance: currentBal + plan.proposedAdjustment,
+                    updatedAt: new Date().toISOString()
+                });
+            }
+
             console.log(`[MIGRATION] Setting Opening Balance for ${plan.memberName}: ${plan.proposedAdjustment}`);
             success++;
         } catch (e) {

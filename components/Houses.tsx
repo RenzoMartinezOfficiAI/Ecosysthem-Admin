@@ -118,9 +118,9 @@ const Houses: React.FC<HousesProps> = ({ houses, userRole }) => {
               <p className="text-slate-500">No houses found. Add one to get started.</p>
           </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex flex-wrap gap-6">
             {houses.map((house) => (
-            <div key={house.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
+            <div key={house.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col flex-1 min-w-[320px]">
                 <div className="p-6 flex-1">
                 <div className="flex justify-between items-start">
                     <div>
@@ -161,16 +161,17 @@ const Houses: React.FC<HousesProps> = ({ houses, userRole }) => {
                 )}
                 </div>
                 
-                <div className="bg-slate-50 px-6 py-3 border-t border-slate-100 flex justify-between items-center">
+                <div className="bg-slate-50 px-6 py-3 border-t border-slate-100 flex justify-between items-center gap-2">
                     <button 
-                    onClick={() => setSelectedHouseId(house.id)}
-                    className="text-sm text-indigo-600 font-medium hover:text-indigo-800 flex items-center"
+                        onClick={() => setSelectedHouseId(house.id)}
+                        className="text-sm text-slate-600 font-medium hover:text-indigo-600 flex items-center"
                     >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                    Inventory
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                        Inventory
                     </button>
+
                     {canEdit && (
-                         <button onClick={() => handleOpenEdit(house)} className="text-sm text-slate-500 hover:text-indigo-600 flex items-center">
+                         <button onClick={() => handleOpenEdit(house)} className="text-sm text-slate-500 hover:text-indigo-600 flex items-center ml-auto">
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                             Edit
                          </button>
