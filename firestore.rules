@@ -4,15 +4,15 @@ service cloud.firestore {
     
     // --- HELPER FUNCTIONS ---
     
-    // Check if user is logged in
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Fetch the user's role from their Firestore document
     function getUserRole() {
-      // Returns the 'role' field from /users/{uid} or null if not found
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      // Safely check if the user document exists before trying to access it
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+             ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+             : null;
     }
 
     function isAdmin() {
@@ -27,44 +27,32 @@ service cloud.firestore {
       return isAuthenticated() && (getUserRole() == 'HOUSE_LEAD' || isOpsManager());
     }
     
-    // 'Staff' broadly means anyone with a valid role assigned
     function isStaff() {
       return isHouseLead(); 
     }
 
     // --- USERS ---
     match /users/{userId} {
-      // Users can read/write their own profile
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
-      // Admins can read all users (to manage staff)
       allow read: if isAdmin();
     }
 
     // --- CORE ENTITIES ---
 
-    // MEMBERS
     match /members/{memberId} {
       allow read: if isStaff();
-      // Only Admins/Ops can create/delete members? Or Leads too?
-      // Usually Leads need to see, maybe update notes.
-      // Let's allow Leads to read, but strict writes.
-      allow create: if isOpsManager();
-      allow update: if isOpsManager();
-      allow write: if isOpsManager(); 
+      allow create, update, delete: if isOpsManager();
     }
 
-    // HOUSES
     match /houses/{houseId} {
       allow read: if isStaff();
       allow write: if isOpsManager();
     }
     
-    // SPONSORSHIPS
     match /sponsorships/{sponsorshipId} {
       allow read, write: if isOpsManager();
     }
 
-    // --- FINANCIAL LEDGER (READ-ONLY for Client usually) ---
     match /bedCharges/{docId} { allow read: if isOpsManager(); allow write: if false; }
     match /sponsorshipCharges/{docId} { allow read: if isOpsManager(); allow write: if false; }
     match /memberPayments/{docId} { allow read: if isOpsManager(); allow write: if false; }
@@ -72,26 +60,18 @@ service cloud.firestore {
     
     // --- OPERATIONS ---
 
-    // WORK ORDERS
     match /workOrders/{workOrderId} {
-      allow read: if isStaff();
-      allow create: if isStaff();
-      allow update: if isStaff();
+      allow read, create, update: if isStaff();
     }
 
-    // INVENTORY
     match /inventoryItems/{itemId} {
-      allow read: if isStaff();
-      allow write: if isStaff();
+      allow read, write: if isStaff();
     }
 
-    // MAINTENANCE TASKS
     match /maintenanceTasks/{taskId} {
-      allow read: if isStaff();
-      allow write: if isStaff();
+      allow read, write: if isStaff();
     }
     
-    // SYSTEM ERRORS
     match /systemErrors/{docId} {
       allow read: if isAdmin();
       allow write: if false;
