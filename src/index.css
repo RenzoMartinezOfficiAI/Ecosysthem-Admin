@@ -1,1 +1,28 @@
 @import "tailwindcss";
+
+@theme {
+  --color-matte-950: #09090b;
+  --color-matte-900: #18181b;
+  --color-matte-800: #27272a;
+  --color-matte-700: #3f3f46;
+
+  --color-neon-blue: #22d3ee;
+  --color-neon-green: #a3e635;
+  --color-neon-purple: #c084fc;
+
+  --shadow-glow-blue: 0 0 10px rgba(34, 211, 238, 0.3);
+  --shadow-glow-green: 0 0 10px rgba(163, 230, 53, 0.3);
+  --shadow-glow-purple: 0 0 10px rgba(192, 132, 252, 0.3);
+}
+
+@layer base {
+  body {
+    @apply bg-matte-950 text-gray-300 antialiased;
+  }
+}
+
+@layer utilities {
+  .glow-text {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  }
+}

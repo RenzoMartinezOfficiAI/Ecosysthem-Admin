@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { User, onAuthStateChanged, signOut as firebaseSignOut, IdTokenResult } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
@@ -77,9 +77,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error signing out: ", error);
     }
   };
+  
+  // Memoize context value to prevent unnecessary re-renders of consuming components
+  const value = useMemo(() => ({
+      user, role, loading, signOut, refreshRole
+  }), [user, role, loading]);
 
   return (
-    <AuthContext.Provider value={{ user, role, loading, signOut, refreshRole }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

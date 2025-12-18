@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../../types';
 
@@ -10,7 +10,10 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigate }) => {
   const { user, role, signOut } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,80 +48,104 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigate }) =>
   return (
     <div className="flex h-screen bg-black-matte overflow-hidden font-sans">
       {/* Sidebar */}
-      <aside className="w-72 bg-dark-surface border-r border-white/5 flex flex-col z-20 shadow-2xl relative">
+      <aside 
+        className={`${isSidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 bg-dark-surface border-r border-white/5 flex flex-col z-20 shadow-2xl relative overflow-hidden`}
+      >
         {/* Glow effect behind logo */}
         <div className="absolute top-0 left-0 w-full h-32 bg-cyber-blue-500/5 blur-3xl pointer-events-none"></div>
         
-        <div className="p-6 relative z-10">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 bg-cyber-blue-500/10 border border-cyber-blue-500/30 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.2)]">
+        <div className="p-4 relative z-10 flex items-center justify-between">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-10 h-10 bg-cyber-blue-500/10 border border-cyber-blue-500/30 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.2)] flex-shrink-0">
                <span className="text-cyber-blue-500 font-bold text-xl tracking-tight">E</span>
             </div>
-            <div>
-              <span className="block text-lg font-bold text-white leading-none tracking-wide">EcoSysThem</span>
-              <span className="text-[10px] font-bold text-cyber-blue-500 uppercase tracking-widest">Admin Console</span>
+            <div className={`transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0 hidden'}`}>
+              <span className="block text-lg font-bold text-white leading-none tracking-wide whitespace-nowrap">EcoSysThem</span>
+              <span className="text-[10px] font-bold text-cyber-blue-500 uppercase tracking-widest whitespace-nowrap">Admin Console</span>
             </div>
           </div>
+          
+           {/* Sidebar Toggle Button */}
+           <button 
+             onClick={toggleSidebar}
+             className={`p-1.5 rounded-lg bg-matte-800 text-neon-blue-500 hover:bg-matte-700 hover:text-white transition-all duration-200 border border-transparent hover:border-neon-blue-500/30 ${!isSidebarOpen && 'mx-auto'}`}
+             title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+           >
+             <svg className={`w-4 h-4 transition-transform duration-300 ${isSidebarOpen ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+             </svg>
+           </button>
         </div>
         
-        <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto overflow-x-hidden">
           {menuItems.map(item => (
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`w-full group ${currentPage === item.id ? 'nav-item-active' : 'nav-item-inactive'} nav-item`}
+              className={`w-full group ${currentPage === item.id ? 'nav-item-active' : 'nav-item-inactive'} nav-item flex items-center ${isSidebarOpen ? 'justify-start px-4' : 'justify-center px-2'} py-3 transition-all duration-200`}
             >
-              <span className={`transition-transform duration-300 ${currentPage === item.id ? 'text-cyber-blue-500' : 'text-slate-500 group-hover:text-white'}`}>
+              <span className={`flex-shrink-0 transition-transform duration-300 ${currentPage === item.id ? 'text-cyber-blue-500' : 'text-slate-500 group-hover:text-white'}`}>
                 {item.icon}
               </span>
-              {item.label}
+              {isSidebarOpen && (
+                 <span className="ml-3 truncate animate-enter">{item.label}</span>
+              )}
             </button>
           ))}
         </nav>
 
         <div className="p-4 border-t border-white/5 bg-black-matte/30">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 mb-3 hover:border-cyber-blue-500/30 transition-colors cursor-default">
-             <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-cyber-blue-900 to-black-matte border border-cyber-blue-500/30 flex items-center justify-center text-sm font-bold text-cyber-blue-500 shadow-inner">
-                {user?.email?.charAt(0).toUpperCase()}
-             </div>
-             <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-white truncate">{user?.displayName || 'User'}</p>
-                <p className="text-[10px] text-slate-400 truncate uppercase tracking-wider">{role}</p>
-             </div>
-          </div>
+           {isSidebarOpen ? (
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 mb-3 hover:border-cyber-blue-500/30 transition-colors cursor-default">
+                 <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-cyber-blue-900 to-black-matte border border-cyber-blue-500/30 flex items-center justify-center text-sm font-bold text-cyber-blue-500 shadow-inner flex-shrink-0">
+                    {user?.email?.charAt(0).toUpperCase()}
+                 </div>
+                 <div className="flex-1 min-w-0 overflow-hidden">
+                    <p className="text-sm font-bold text-white truncate">{user?.displayName || 'User'}</p>
+                    <p className="text-[10px] text-slate-400 truncate uppercase tracking-wider">{role}</p>
+                 </div>
+              </div>
+           ) : (
+              <div className="flex justify-center mb-3">
+                 <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-cyber-blue-900 to-black-matte border border-cyber-blue-500/30 flex items-center justify-center text-sm font-bold text-cyber-blue-500 shadow-inner cursor-default" title={user?.email}>
+                    {user?.email?.charAt(0).toUpperCase()}
+                 </div>
+              </div>
+           )}
+          
           <button 
             onClick={signOut}
-            className="btn btn-secondary w-full text-xs py-2 hover:text-neon-red-500 hover:border-neon-red-500/30 hover:bg-neon-red-500/5 transition-all"
+            className={`btn btn-secondary w-full text-xs py-2 hover:text-neon-red-500 hover:border-neon-red-500/30 hover:bg-neon-red-500/5 transition-all whitespace-nowrap overflow-hidden flex items-center justify-center gap-2`}
           >
-            Sign Out
+             {isSidebarOpen ? 'Sign Out' : (
+                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+             )}
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-black-matte relative">
+      <main className="flex-1 overflow-y-auto bg-black-matte relative flex flex-col transition-all duration-300">
         {/* Background ambient glow */}
         <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-cyber-blue-500/5 blur-[120px] rounded-full pointer-events-none"></div>
         
-        <div className="max-w-7xl mx-auto relative z-10">
-          <header className="px-8 py-8 flex justify-between items-end border-b border-white/5 bg-black-matte/50 backdrop-blur-md sticky top-0 z-20">
+        <header className="px-8 py-4 flex justify-between items-center border-b border-white/5 bg-black-matte/50 backdrop-blur-md sticky top-0 z-20">
              <div>
-                <h1 className="text-3xl font-bold text-white tracking-tight capitalize glow-text">
+                <h1 className="text-2xl font-bold text-white tracking-tight capitalize glow-text">
                     {menuItems.find(i => i.id === currentPage)?.label || currentPage}
                 </h1>
-                <p className="text-slate-400 mt-1 text-sm">System Overview & Resource Management</p>
+                <p className="text-slate-400 text-xs mt-0.5">System Overview & Resource Management</p>
              </div>
-             <div className="text-right">
+             <div className="flex items-center">
                 <div className="text-xs font-mono text-cyber-blue-500 bg-cyber-blue-500/10 px-2 py-1 rounded border border-cyber-blue-500/20">
                     SYSTEM ONLINE
                 </div>
              </div>
           </header>
           
-          <div className="px-8 py-8 pb-20 animate-enter">
+          <div className="px-8 py-8 pb-20 animate-enter flex-1">
             {children}
           </div>
-        </div>
       </main>
     </div>
   );

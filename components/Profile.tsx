@@ -218,32 +218,32 @@ const Profile: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* HEADER */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-matte-900 rounded-xl shadow-sm border border-matte-800 p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex items-center gap-6">
-          <div className="h-24 w-24 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center overflow-hidden">
+          <div className="h-24 w-24 rounded-full bg-matte-950 border-2 border-matte-800 flex items-center justify-center overflow-hidden">
              {photoURL ? (
                  <img src={photoURL} alt="Profile" className="h-full w-full object-cover" />
              ) : (
-                 <span className="text-3xl font-bold text-slate-400">{displayName?.charAt(0) || user.email?.charAt(0)}</span>
+                 <span className="text-3xl font-bold text-gray-600">{displayName?.charAt(0) || user.email?.charAt(0)}</span>
              )}
           </div>
           <div>
-             <h1 className="text-2xl font-bold text-slate-900">{displayName || 'User'}</h1>
-             <p className="text-slate-500">{user.email}</p>
-             <p className="text-xs text-slate-400 mt-1">UID: {user.uid}</p>
+             <h1 className="text-2xl font-bold text-white glow-text">{displayName || 'User'}</h1>
+             <p className="text-gray-500">{user.email}</p>
+             <p className="text-xs text-gray-600 mt-1 font-mono">UID: {user.uid}</p>
           </div>
         </div>
         <div className="flex gap-3">
              <button 
                 onClick={() => setIsEditing(!isEditing)}
-                className="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
+                className="px-4 py-2 bg-matte-950 border border-matte-800 text-neon-blue font-bold rounded-lg hover:bg-matte-800 hover:shadow-glow-blue transition-all"
              >
                 {isEditing ? 'Cancel Edit' : 'Edit Profile'}
              </button>
              <button 
                 onClick={handleDeleteAccount}
                 disabled={loading}
-                className="px-4 py-2 bg-rose-50 border border-rose-200 text-rose-700 font-medium rounded-lg hover:bg-rose-100 transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 font-bold rounded-lg hover:bg-red-500/20 transition-all disabled:opacity-50"
              >
                 {loading ? 'Deleting...' : 'Delete Account'}
              </button>
@@ -254,32 +254,32 @@ const Profile: React.FC = () => {
         
         {/* LEFT COL: EDIT PROFILE */}
         {isEditing && (
-            <div className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-slate-200 p-6 h-fit">
-                <h3 className="font-bold text-slate-800 mb-4">Update Details</h3>
+            <div className="lg:col-span-1 bg-matte-900 rounded-xl shadow-sm border border-matte-800 p-6 h-fit">
+                <h3 className="font-bold text-white mb-4">Update Details</h3>
                 <form onSubmit={handleProfileUpdate} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Display Name</label>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">Display Name</label>
                         <input 
                             type="text" 
                             value={displayName}
                             onChange={e => setDisplayName(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                            className="w-full px-3 py-2 bg-matte-950 border border-matte-700 rounded-lg focus:ring-1 focus:ring-neon-blue text-white outline-none"
                         />
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Profile Photo</label>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">Profile Photo</label>
                          <div className="flex items-center gap-4 mb-2">
                             {/* Preview */}
-                            <div className="h-12 w-12 rounded-full bg-slate-100 overflow-hidden border border-slate-200 shrink-0">
+                            <div className="h-12 w-12 rounded-full bg-matte-950 overflow-hidden border border-matte-800 shrink-0">
                                 {photoURL ? (
                                     <img src={photoURL} alt="Preview" className="h-full w-full object-cover" />
                                 ) : (
-                                    <span className="flex items-center justify-center h-full text-xs text-slate-400">No Img</span>
+                                    <span className="flex items-center justify-center h-full text-xs text-gray-600">No Img</span>
                                 )}
                             </div>
                             <div className="flex-1">
-                                <label className={`block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer ${profileUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                <label className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-matte-800 file:text-neon-blue hover:file:bg-matte-700 cursor-pointer ${profileUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                     <input 
                                         type="file" 
                                         accept="image/*"
@@ -287,14 +287,14 @@ const Profile: React.FC = () => {
                                         disabled={profileUploading}
                                         className="hidden"
                                     />
-                                    <span className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-xs font-semibold hover:bg-indigo-100 transition-colors inline-block">
+                                    <span className="px-4 py-2 bg-matte-800 text-neon-blue border border-matte-700 rounded-full text-xs font-bold hover:bg-matte-700 hover:border-neon-blue hover:shadow-glow-blue transition-all inline-block">
                                         {profileUploading ? 'Uploading...' : 'Choose File'}
                                     </span>
                                 </label>
                             </div>
                         </div>
                          {photoURL && (
-                            <button type="button" onClick={handleRemovePhoto} className="text-xs text-rose-600 hover:text-rose-800 ml-16">
+                            <button type="button" onClick={handleRemovePhoto} className="text-xs text-red-500 hover:text-red-400 ml-16 font-medium">
                                 Remove current photo
                             </button>
                         )}
@@ -303,7 +303,7 @@ const Profile: React.FC = () => {
                     <button 
                         type="submit" 
                         disabled={loading || profileUploading}
-                        className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 mt-4"
+                        className="w-full bg-neon-blue text-matte-950 py-2 rounded-lg font-bold hover:bg-cyan-400 shadow-glow-blue transition-all disabled:opacity-50 mt-4"
                     >
                         {loading ? 'Saving...' : 'Save Changes'}
                     </button>
@@ -313,10 +313,10 @@ const Profile: React.FC = () => {
 
         {/* RIGHT COL: FILE MANAGER */}
         <div className={isEditing ? "lg:col-span-2" : "lg:col-span-3"}>
-             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                    <h2 className="font-bold text-slate-800 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+             <div className="bg-matte-900 rounded-xl shadow-sm border border-matte-800 overflow-hidden">
+                <div className="px-6 py-4 border-b border-matte-800 bg-matte-900/50 flex justify-between items-center">
+                    <h2 className="font-bold text-white flex items-center gap-2">
+                        <svg className="w-5 h-5 text-neon-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                         My Files
                     </h2>
                     <div className="relative">
@@ -329,11 +329,11 @@ const Profile: React.FC = () => {
                         />
                         <label 
                             htmlFor="file-upload"
-                            className={`flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg cursor-pointer hover:bg-indigo-700 transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`flex items-center gap-2 px-4 py-2 bg-neon-blue text-matte-950 text-sm font-bold rounded-lg cursor-pointer hover:bg-cyan-400 hover:shadow-glow-blue transition-all ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             {uploading ? (
                                 <>
-                                    <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    <svg className="animate-spin h-4 w-4 text-matte-950" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                     Uploading...
                                 </>
                             ) : (
@@ -346,39 +346,39 @@ const Profile: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-matte-800">
                     {files.length === 0 ? (
-                        <div className="p-12 text-center text-slate-400">
-                            <svg className="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        <div className="p-12 text-center text-gray-500">
+                            <svg className="w-12 h-12 mx-auto mb-3 text-matte-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                             <p>No files uploaded yet.</p>
                         </div>
                     ) : (
                         files.map(file => (
-                            <div key={file.id} className="p-6 hover:bg-slate-50 transition-colors group">
+                            <div key={file.id} className="p-6 hover:bg-matte-800/30 transition-colors group">
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-start gap-4">
-                                        <div className="mt-1 h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                        <div className="mt-1 h-10 w-10 rounded-lg bg-matte-800 border border-matte-700 flex items-center justify-center text-neon-blue">
                                             {file.type.includes('image') ? (
                                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                             ) : (
                                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                                             )}
                                         </div>
-                                        <div>
+                                        <div className="flex-1 min-w-0">
                                             <button 
                                                 onClick={() => handleDownloadFile(file)}
-                                                className="text-sm font-bold text-slate-900 hover:text-indigo-600 hover:underline text-left"
+                                                className="text-sm font-bold text-gray-200 hover:text-neon-blue hover:underline text-left truncate block"
                                             >
                                                 {file.name}
                                             </button>
-                                            <div className="text-xs text-slate-500 mt-0.5">
+                                            <div className="text-xs text-gray-500 mt-0.5 font-mono">
                                                 {(file.size / 1024).toFixed(1)} KB • {new Date(file.createdAt).toLocaleDateString()}
                                             </div>
                                             
                                             {/* AI Summary Block */}
                                             {file.aiSummary && (
-                                                <div className="mt-2 p-2 bg-indigo-50 border border-indigo-100 rounded text-xs text-indigo-900 leading-relaxed max-w-xl">
-                                                    <span className="font-bold uppercase text-[10px] tracking-wider text-indigo-500 block mb-1">AI Summary</span>
+                                                <div className="mt-2 p-2 bg-neon-purple/5 border border-neon-purple/20 rounded text-xs text-gray-300 leading-relaxed max-w-xl">
+                                                    <span className="font-bold uppercase text-[10px] tracking-wider text-neon-purple block mb-1 glow-text-purple">AI Summary</span>
                                                     {file.aiSummary}
                                                 </div>
                                             )}
@@ -388,7 +388,7 @@ const Profile: React.FC = () => {
                                                 <input 
                                                     type="text" 
                                                     placeholder="Add notes..." 
-                                                    className="text-sm bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none w-full text-slate-600 placeholder-slate-400 transition-colors"
+                                                    className="text-sm bg-transparent border-b border-matte-800 hover:border-matte-600 focus:border-neon-blue focus:outline-none w-full text-gray-300 placeholder-gray-600 transition-colors pb-1"
                                                     defaultValue={file.notes}
                                                     onBlur={(e) => handleUpdateNote(file.id, e.target.value)}
                                                 />
@@ -399,14 +399,14 @@ const Profile: React.FC = () => {
                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button 
                                             onClick={() => handleDownloadFile(file)}
-                                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-full"
+                                            className="p-2 text-gray-500 hover:text-neon-blue hover:bg-matte-800 rounded-full transition-colors"
                                             title="Download"
                                         >
                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4 4m4-4v12" /></svg>
                                         </button>
                                         <button 
                                             onClick={() => handleDeleteFile(file)}
-                                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full"
+                                            className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
                                         >
                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         </button>

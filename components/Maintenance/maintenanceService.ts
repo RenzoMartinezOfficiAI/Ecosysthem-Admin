@@ -28,12 +28,13 @@ export const calculateNextDueDate = (baseDate: Date, frequency: MaintenanceFrequ
 
 // FETCH TASKS FOR A HOUSE
 export const fetchTasksForHouse = async (houseId: string): Promise<MaintenanceTask[]> => {
+    if (!houseId) return [];
     const tasksRef = collection(db, 'maintenance_tasks');
+    
+    // Requires composite index on [houseId, dueDate]
     const q = query(
         tasksRef, 
         where('houseId', '==', houseId), 
-        // We ideally want active tasks. Completed recurring tasks spawn new ones, completed one-time tasks are history.
-        // For simplicity, let's fetch all and filter in UI or split queries if needed.
         orderBy('dueDate', 'asc') 
     );
     
@@ -56,7 +57,7 @@ export const createMaintenanceTask = async (task: Omit<MaintenanceTask, 'id' | '
 // UPDATE TASK STATUS
 export const updateTaskStatus = async (taskId: string, newStatus: TaskStatus, completedDate?: string) => {
     const taskRef = doc(db, 'maintenance_tasks', taskId);
-    const update: any = {
+    const update: Partial<MaintenanceTask> = {
         status: newStatus,
         updatedAt: new Date().toISOString()
     };

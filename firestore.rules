@@ -56,12 +56,9 @@ service cloud.firestore {
     match /bedCharges/{docId} { allow read, write: if isOpsManager(); }
     match /sponsorshipCharges/{docId} { allow read, write: if isOpsManager(); }
     
-    // Payments are typically handled by backend/cloud functions, but if client needs to record them directly (e.g. self-pay portal later), update this.
     match /memberPayments/{docId} { allow read: if isOpsManager(); allow write: if false; }
-    
-    // Adjustments
-    match /memberAdjustments/{docId} { allow read: if isOpsManager(); allow write: if false; } // Cloud Function legacy/standard
-    match /adjustments/{docId} { allow read, write: if isOpsManager(); } // Client-side Migration Tool
+    match /memberAdjustments/{docId} { allow read: if isOpsManager(); allow write: if false; } 
+    match /adjustments/{docId} { allow read, write: if isOpsManager(); } 
 
     // --- OPERATIONS ---
 
@@ -73,12 +70,12 @@ service cloud.firestore {
       allow read, write: if isStaff();
     }
 
-    // Updated to match code usage (snake_case)
+    // Explicitly allow read for testing purposes if strict role fails, but keeping it staff only for now.
+    // Ensure index exists for the query.
     match /maintenance_tasks/{taskId} {
       allow read, write: if isStaff();
     }
     
-    // Kept for compatibility just in case
     match /maintenanceTasks/{taskId} {
       allow read, write: if isStaff();
     }

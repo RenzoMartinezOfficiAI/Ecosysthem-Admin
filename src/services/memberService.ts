@@ -11,55 +11,100 @@ import {
   QueryConstraint,
   onSnapshot,
   runTransaction,
-  writeBatch
+  writeBatch,
+  DocumentData,
+  QueryDocumentSnapshot,
+  SnapshotOptions,
+  FieldValue
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Member, MemberStatus, PayType, MemberIncomeSource, EmergencyContact, Sponsorship, MemberLabel } from '../../types';
 import { calculateBilling } from '../utils/billingLogic';
 
-const membersCol = collection(db, 'members');
-
-function memberConverter(data: any, id: string): Member {
-  return {
-    id,
-    fullName: data.fullName,
-    phone: data.phone ?? undefined,
-    email: data.email ?? undefined,
-    dateOfBirth: data.dateOfBirth ?? undefined,
-
-    status: (data.status as MemberStatus) ?? MemberStatus.PENDING,
-    label: (data.label as MemberLabel) ?? MemberLabel.MEMBER,
-
-    houseId: data.houseId ?? null,
-
-    isVeteran: !!data.isVeteran,
-    veteranBranch: data.veteranBranch ?? undefined,
-
-    payType: (data.payType as PayType) ?? PayType.SELF_PAY,
-    bedRateMonthly: data.bedRateMonthly ?? 0,
-
-    incomeSources: data.incomeSources ?? [],
-
-    intakeDate: data.intakeDate,
-    exitDate: data.exitDate ?? undefined,
-
-    emergencyContact: data.emergencyContact ?? undefined,
-    insuranceProviderName: data.insuranceProviderName ?? undefined,
-    insuranceMemberId: data.insuranceMemberId ?? undefined,
-
-    mediaRelease: !!data.mediaRelease,
-    notes: data.notes ?? undefined,
-
-    // Ledger defaults
-    lastBilledPeriodIndex: data.lastBilledPeriodIndex ?? -1,
-    lastBilledThrough: data.lastBilledThrough ?? undefined,
-    accountBalance: data.accountBalance ?? 0,
-    hasOutstandingBalance: data.hasOutstandingBalance ?? false,
-
-    createdAt: data.createdAt ?? new Date().toISOString(),
-    updatedAt: data.updatedAt ?? new Date().toISOString(),
-  };
+// Define the shape of the data as it exists in Firestore
+interface MemberFirestoreData {
+  fullName: string;
+  phone?: string | null;
+  email?: string | null;
+  dateOfBirth?: string | null;
+  status?: string;
+  label?: string;
+  houseId?: string | null;
+  isVeteran?: boolean;
+  veteranBranch?: string | null;
+  payType?: string;
+  bedRateMonthly?: number;
+  incomeSources?: MemberIncomeSource[];
+  intakeDate: string;
+  exitDate?: string | null;
+  emergencyContact?: EmergencyContact | null;
+  insuranceProviderName?: string | null;
+  insuranceMemberId?: string | null;
+  mediaRelease?: boolean;
+  notes?: string | null;
+  lastBilledPeriodIndex?: number;
+  lastBilledThrough?: string | null;
+  accountBalance?: number;
+  hasOutstandingBalance?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+const memberConverter = {
+  toFirestore(member: Partial<Member>): DocumentData {
+    // We don't usually use toFirestore for updates in this app, but for completeness:
+    // This creates a plain object from the Member model
+    const { id, ...data } = member;
+    return data;
+  },
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot,
+    options: SnapshotOptions
+  ): Member {
+    const data = snapshot.data(options) as MemberFirestoreData;
+    return {
+        id: snapshot.id,
+        fullName: data.fullName,
+        phone: data.phone ?? undefined,
+        email: data.email ?? undefined,
+        dateOfBirth: data.dateOfBirth ?? undefined,
+    
+        status: (data.status as MemberStatus) ?? MemberStatus.PENDING,
+        label: (data.label as MemberLabel) ?? MemberLabel.MEMBER,
+    
+        houseId: data.houseId ?? null,
+    
+        isVeteran: !!data.isVeteran,
+        veteranBranch: data.veteranBranch ?? undefined,
+    
+        payType: (data.payType as PayType) ?? PayType.SELF_PAY,
+        bedRateMonthly: data.bedRateMonthly ?? 0,
+    
+        incomeSources: data.incomeSources ?? [],
+    
+        intakeDate: data.intakeDate,
+        exitDate: data.exitDate ?? undefined,
+    
+        emergencyContact: data.emergencyContact ?? undefined,
+        insuranceProviderName: data.insuranceProviderName ?? undefined,
+        insuranceMemberId: data.insuranceMemberId ?? undefined,
+    
+        mediaRelease: !!data.mediaRelease,
+        notes: data.notes ?? undefined,
+    
+        // Ledger defaults
+        lastBilledPeriodIndex: data.lastBilledPeriodIndex ?? -1,
+        lastBilledThrough: data.lastBilledThrough ?? undefined,
+        accountBalance: data.accountBalance ?? 0,
+        hasOutstandingBalance: data.hasOutstandingBalance ?? false,
+    
+        createdAt: data.createdAt ?? new Date().toISOString(),
+        updatedAt: data.updatedAt ?? new Date().toISOString(),
+    };
+  }
+};
+
+const membersCol = collection(db, 'members').withConverter(memberConverter);
 
 export async function fetchMembers(statusFilter?: MemberStatus, houseIdFilter?: string[]): Promise<Member[]> {
   const constraints: QueryConstraint[] = [];
@@ -71,7 +116,7 @@ export async function fetchMembers(statusFilter?: MemberStatus, houseIdFilter?: 
 
   const q = query(membersCol, ...constraints);
   const snap = await getDocs(q);
-  return snap.docs.map(d => memberConverter(d.data(), d.id));
+  return snap.docs.map(d => d.data());
 }
 
 export function subscribeToMembers(
@@ -90,7 +135,7 @@ export function subscribeToMembers(
   const q = query(membersCol, ...constraints);
   
   return onSnapshot(q, (snapshot) => {
-    const members = snapshot.docs.map(d => memberConverter(d.data(), d.id));
+    const members = snapshot.docs.map(d => d.data());
     onUpdate(members);
   }, (error) => {
     console.error("Error subscribing to members", error);
@@ -99,10 +144,10 @@ export function subscribeToMembers(
 }
 
 export async function fetchMemberById(id: string): Promise<Member | null> {
-  const ref = doc(db, 'members', id);
+  const ref = doc(db, 'members', id).withConverter(memberConverter);
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
-  return memberConverter(snap.data(), snap.id);
+  return snap.data();
 }
 
 export interface UpdateMemberInput {
@@ -130,12 +175,12 @@ export interface UpdateMemberInput {
 export async function updateMember(id: string, input: UpdateMemberInput): Promise<void> {
   const ref = doc(db, 'members', id);
   
-  const update: Record<string, any> = {
+  // Use a strictly typed update object
+  const update: Record<string, string | number | boolean | null | MemberIncomeSource[] | EmergencyContact | FieldValue | undefined> = {
     updatedAt: new Date().toISOString(),
     updatedAtServer: serverTimestamp(),
   };
 
-  // Explicit mapping prevents any accidental injection of ledger fields
   if (input.fullName !== undefined) update.fullName = input.fullName.trim();
   if (input.phone !== undefined) update.phone = input.phone;
   if (input.email !== undefined) update.email = input.email;
@@ -185,10 +230,11 @@ export async function createMember(memberData: Partial<Member>, sponsorshipData?
     const memberId = memberRef.id;
 
     // Helper to remove undefined
-    const clean = (val: any) => val === undefined ? null : val;
+    const clean = <T>(val: T | undefined): T | null => val === undefined ? null : val;
 
-    // Default Member Object
-    const newMember: any = {
+    // Default Member Object - Strict Type
+    // Use Record to allow constructing it, but validate against Member interface logic
+    const newMember: Record<string, unknown> = {
         fullName: clean(memberData.fullName),
         phone: clean(memberData.phone),
         email: clean(memberData.email),
@@ -211,7 +257,7 @@ export async function createMember(memberData: Partial<Member>, sponsorshipData?
         
         // Ledger Defaults
         lastBilledPeriodIndex: -1,
-        lastBilledThrough: undefined,
+        lastBilledThrough: null, // Firestore does not support undefined, use null
         accountBalance: 0,
         hasOutstandingBalance: false,
         
@@ -245,18 +291,13 @@ export async function createMember(memberData: Partial<Member>, sponsorshipData?
             }
         });
         return memberId;
-    } catch (e: any) {
+    } catch (e) {
         console.error("Transaction failed: ", e);
-        throw new Error(`Failed to create member: ${e.message}`);
+        throw new Error(`Failed to create member: ${(e as Error).message}`);
     }
 }
 
 // CLOUD FUNCTIONS (Deprecated references kept for compatibility but not used in Client Intake)
-
-interface IntakePayload {
-    memberData: Omit<Partial<Member>, 'id' | 'accountBalance' | 'lastBilledPeriodIndex' | 'hasOutstandingBalance'>;
-    sponsorshipData?: Partial<Sponsorship>;
-}
 
 export const callIntakeMember = async (memberData: Partial<Member>, sponsorshipData?: Partial<Sponsorship>) => {
     // Redirect to client-side logic
@@ -270,12 +311,11 @@ export const callExitMember = async (memberId: string, exitDate: string, reason:
         const now = new Date().toISOString();
 
         // 1. Get Member
-        const memberRef = doc(db, 'members', memberId);
+        const memberRef = doc(db, 'members', memberId).withConverter(memberConverter);
         const memberSnap = await getDoc(memberRef);
         if (!memberSnap.exists()) throw new Error("Member not found");
         
-        // Use converter to ensure full Member object structure
-        const member = memberConverter(memberSnap.data(), memberId);
+        const member = memberSnap.data();
         
         // VALIDATION: Ensure exit date is valid relative to billing
         const limitDate = member.lastBilledThrough || member.intakeDate;
@@ -319,7 +359,7 @@ export const callExitMember = async (memberId: string, exitDate: string, reason:
 
         // Update Sponsorships (Remaining Amount)
         // Note: We need to handle the merge with deactivation carefully.
-        const sponsorUpdatesMap = new Map<string, any>();
+        const sponsorUpdatesMap = new Map<string, Record<string, unknown>>();
 
         billingResult.updatedSponsorships.forEach(sp => {
            const original = sponsorships.find(s => s.id === sp.id);
@@ -342,7 +382,7 @@ export const callExitMember = async (memberId: string, exitDate: string, reason:
             notes: newNotes,
             
             lastBilledPeriodIndex: billingResult.newLastBilledIndex,
-            lastBilledThrough: billingResult.newLastBilledThrough,
+            lastBilledThrough: billingResult.newLastBilledThrough || null, // Convert undefined to null
             accountBalance: currentBalance,
             hasOutstandingBalance: currentBalance < 0,
             
@@ -352,7 +392,7 @@ export const callExitMember = async (memberId: string, exitDate: string, reason:
         // 6. Deactivate Sponsorships (Merge with billing updates)
         sponsorships.forEach(sp => {
             const spRef = doc(db, 'sponsorships', sp.id);
-            const updates: any = sponsorUpdatesMap.get(sp.id) || {};
+            const updates = sponsorUpdatesMap.get(sp.id) || {};
             
             // Deactivate
             updates.isActive = false;
@@ -364,8 +404,8 @@ export const callExitMember = async (memberId: string, exitDate: string, reason:
 
         await batch.commit();
         
-    } catch (error: any) {
+    } catch (error) {
         console.error("Exit Error:", error);
-        throw new Error(`Failed to exit member: ${error.message}`);
+        throw new Error(`Failed to exit member: ${(error as Error).message}`);
     }
 };

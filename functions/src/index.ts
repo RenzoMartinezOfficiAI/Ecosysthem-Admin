@@ -58,19 +58,20 @@ const getGeminiKey = () => {
 // --- GEMINI AI SERVICES ---
 
 export const analyzeSystemError = https.onCall(async (data, context) => {
-    checkAuth(context, ADMIN_OPS);
-    const { error } = data;
-    
-    // Securely access API Key
-    const apiKey = getGeminiKey();
-
-    if (!apiKey) {
-        console.error("Gemini API Key missing in environment variables.");
-        // Return a friendly string instead of throwing, so the UI can display it
-        return "AI Analysis unavailable (Missing API Key Configuration).";
-    }
-
     try {
+        checkAuth(context, ADMIN_OPS);
+        const { error } = data;
+        
+        if (!error) return "No error data provided for analysis.";
+        
+        // Securely access API Key
+        const apiKey = getGeminiKey();
+
+        if (!apiKey) {
+            console.error("Gemini API Key missing in environment variables.");
+            return "AI Analysis unavailable (Missing API Key Configuration).";
+        }
+
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -91,18 +92,20 @@ export const analyzeSystemError = https.onCall(async (data, context) => {
         return response.text();
     } catch (err: any) {
         console.error("Gemini API Error:", err);
-        await logSystemError('AI_ANALYSIS_ERROR', err.message, { errorId: error.id });
-        // Propagate the actual error message for better debugging
-        throw new https.HttpsError('internal', `Gemini Analysis Failed: ${err.message}`);
+        await logSystemError('AI_ANALYSIS_ERROR', err.message, { errorId: data?.error?.id });
+        
+        if (err instanceof https.HttpsError) throw err;
+        // Return error as string to avoid crashing the client with 'internal'
+        return `Gemini Analysis Failed: ${err.message}`;
     }
 });
 
 export const summarizeMemberFinancials = https.onCall(async (data, context) => {
-    checkAuth(context, ADMIN_OPS);
-    const { member, transactions } = data;
-
-    // Logic-based summary (Replaces AI interpretation to avoid errors/dependencies)
     try {
+        checkAuth(context, ADMIN_OPS);
+        const { member, transactions } = data;
+
+        // Logic-based summary (Replaces AI interpretation to avoid errors/dependencies)
         const balanceStatus = member.accountBalance < 0 
             ? `owes $${Math.abs(member.accountBalance).toFixed(2)}` 
             : `has a credit of $${member.accountBalance.toFixed(2)}`;
@@ -127,18 +130,19 @@ export const summarizeMemberFinancials = https.onCall(async (data, context) => {
         return summary;
     } catch (err: any) {
         console.error("Summary Generation Error:", err);
+        if (err instanceof https.HttpsError) throw err;
         return "Unable to generate financial summary.";
     }
 });
 
 export const summarizeFile = https.onCall(async (data, context) => {
-    if (!context.auth) throw new https.HttpsError('unauthenticated', 'User must be logged in.');
-    
-    const { filePath, fileType } = data;
-    const apiKey = getGeminiKey();
-    if (!apiKey) return "AI Summary unavailable (Configuration Missing).";
-
     try {
+        if (!context.auth) throw new https.HttpsError('unauthenticated', 'User must be logged in.');
+        
+        const { filePath, fileType } = data;
+        const apiKey = getGeminiKey();
+        if (!apiKey) return "AI Summary unavailable (Configuration Missing).";
+
         const bucket = admin.storage().bucket();
         const file = bucket.file(filePath);
         
@@ -166,6 +170,7 @@ export const summarizeFile = https.onCall(async (data, context) => {
         return response.text();
     } catch (err: any) {
         console.error("Gemini File Summary Error:", err);
+        if (err instanceof https.HttpsError) throw err;
         return `Failed to summarize file: ${err.message}`;
     }
 });

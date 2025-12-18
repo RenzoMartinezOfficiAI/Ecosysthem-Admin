@@ -14,7 +14,7 @@ export const analyzeSystemError = async (error: SystemError): Promise<string> =>
   }
 };
 
-export const summarizeMemberFinancials = async (member: Member, transactions: any[]): Promise<string> => {
+export const summarizeMemberFinancials = async (member: Member, transactions: unknown[]): Promise<string> => {
   const summarizeFn = httpsCallable(functions, 'summarizeMemberFinancials');
 
   try {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { House } from '../../types';
 import { subscribeToHouses } from '../services/houseService';
 
@@ -25,5 +25,6 @@ export function useHouses() {
     return () => unsubscribe();
   }, []);
 
-  return { houses, loading, error };
+  // Memoize the return value to stabilize reference across renders
+  return useMemo(() => ({ houses, loading, error }), [houses, loading, error]);
 }

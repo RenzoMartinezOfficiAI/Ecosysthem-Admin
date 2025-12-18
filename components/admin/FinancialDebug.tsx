@@ -122,7 +122,7 @@ const FinancialDebug: React.FC<FinancialDebugProps> = ({ userRole }) => {
   }
 
   if (userRole === UserRole.HOUSE_LEAD) {
-    return <div className="p-8 text-center text-slate-500">Access Denied: Admin Only Area</div>;
+    return <div className="p-8 text-center text-gray-500">Access Denied: Admin Only Area</div>;
   }
 
   // Find member
@@ -131,22 +131,22 @@ const FinancialDebug: React.FC<FinancialDebugProps> = ({ userRole }) => {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center bg-slate-900 text-white p-6 rounded-xl shadow-lg">
+      <div className="flex justify-between items-center bg-matte-900 text-white p-6 rounded-xl shadow-lg border border-matte-800">
         <div>
-           <h2 className="text-xl font-bold">Financial Debugger</h2>
-           <p className="text-slate-400 text-sm">Ledger Operations • Manual Billing Trigger</p>
+           <h2 className="text-xl font-bold glow-text">Financial Debugger</h2>
+           <p className="text-gray-400 text-sm">Ledger Operations • Manual Billing Trigger</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* CONTROL PANEL */}
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <label className="block text-sm font-medium text-slate-700 mb-2">Target Member</label>
+          <div className="bg-matte-900 p-6 rounded-xl shadow-sm border border-matte-800">
+            <label className="block text-sm font-medium text-gray-400 mb-2">Target Member</label>
             <select
               value={selectedMemberId}
               onChange={(e) => setSelectedMemberId(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm"
+              className="w-full bg-matte-950 border border-matte-700 rounded-lg p-2.5 text-sm text-white focus:border-neon-blue focus:ring-1 focus:ring-neon-blue outline-none"
             >
               <option value="">-- Select Member --</option>
               {members.map(m => (
@@ -155,22 +155,22 @@ const FinancialDebug: React.FC<FinancialDebugProps> = ({ userRole }) => {
             </select>
             
             {member && (
-                <div className="mt-6 space-y-4 border-t border-slate-100 pt-4">
-                    <div className="bg-indigo-50 p-3 rounded">
-                        <div className="text-xs text-indigo-500 uppercase">Ledger Balance</div>
-                        <div className={`text-2xl font-bold ${member.accountBalance < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                <div className="mt-6 space-y-4 border-t border-matte-800 pt-4">
+                    <div className="bg-matte-950 p-3 rounded border border-matte-800">
+                        <div className="text-xs text-neon-blue uppercase font-bold tracking-wider">Ledger Balance</div>
+                        <div className={`text-2xl font-bold ${member.accountBalance < 0 ? 'text-red-500' : 'text-neon-green'}`}>
                             ${member.accountBalance}
                         </div>
-                        <div className="text-xs text-slate-500 mt-1">Status: {member.status}</div>
-                         {house && <div className="text-xs text-slate-500">House: {house.name}</div>}
+                        <div className="text-xs text-gray-500 mt-1">Status: {member.status}</div>
+                         {house && <div className="text-xs text-gray-500">House: {house.name}</div>}
                     </div>
                     
-                    <div className="border-t border-slate-100 pt-4">
-                        <p className="text-xs font-bold text-slate-700 mb-2">Operations</p>
+                    <div className="border-t border-matte-800 pt-4">
+                        <p className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">Operations</p>
                         <button
                             onClick={handleRunBilling}
                             disabled={loading || member.status !== MemberStatus.ACTIVE}
-                            className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded border border-slate-300 mb-2 disabled:opacity-50"
+                            className="w-full py-2 bg-matte-800 hover:bg-matte-700 text-white text-xs font-bold rounded border border-matte-700 mb-2 disabled:opacity-50 transition-colors"
                         >
                             {loading ? 'Running...' : 'Run Catch-up Billing (Real)'}
                         </button>
@@ -181,19 +181,19 @@ const FinancialDebug: React.FC<FinancialDebugProps> = ({ userRole }) => {
         </div>
 
         {/* INFO PANEL */}
-         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <h3 className="font-bold text-slate-800 mb-4">System Status</h3>
-            <ul className="space-y-3 text-sm text-slate-600">
+         <div className="bg-matte-900 p-6 rounded-xl shadow-sm border border-matte-800">
+            <h3 className="font-bold text-white mb-4">System Status</h3>
+            <ul className="space-y-3 text-sm text-gray-400">
                 <li className="flex items-center">
-                    <svg className="w-5 h-5 text-emerald-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    <svg className="w-5 h-5 text-neon-green mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                     Ledger Source of Truth
                 </li>
                  <li className="flex items-center">
-                    <svg className="w-5 h-5 text-emerald-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    <svg className="w-5 h-5 text-neon-green mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                     Strict Intake/Exit Flows
                 </li>
                  <li className="flex items-center">
-                    <svg className="w-5 h-5 text-emerald-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    <svg className="w-5 h-5 text-neon-green mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                     Monthly Summaries Enabled
                 </li>
             </ul>

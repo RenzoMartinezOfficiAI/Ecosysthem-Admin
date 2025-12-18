@@ -117,24 +117,24 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
   // --- VERIFICATION SCREEN ---
   if (needsVerification) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md text-center">
-          <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
+      <div className="min-h-screen flex items-center justify-center bg-matte-950 p-4">
+        <div className="bg-matte-900 p-8 rounded-2xl shadow-2xl border border-matte-800 w-full max-w-md text-center">
+          <div className="w-16 h-16 bg-neon-blue/10 text-neon-blue rounded-full flex items-center justify-center mx-auto mb-6 border border-neon-blue/20">
             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
           
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Verify your email</h1>
-          <p className="text-slate-600 mb-8 leading-relaxed">
-            We have sent you a verification email to <span className="font-semibold text-slate-800">{email}</span>. 
+          <h1 className="text-2xl font-bold text-white mb-2 glow-text">Verify your email</h1>
+          <p className="text-gray-400 mb-8 leading-relaxed">
+            We have sent you a verification email to <span className="font-bold text-neon-blue">{email}</span>. 
             <br />
             Verify it and log in.
           </p>
 
           <button 
             onClick={() => signOut()} // Signs out, trigger AuthContext update, App renders Auth(needsVerification=false)
-            className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors"
+            className="w-full bg-neon-blue text-matte-950 py-2.5 rounded-lg font-bold hover:bg-cyan-400 shadow-glow-blue transition-all"
           >
             Back to Login
           </button>
@@ -146,22 +146,22 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
   // --- PASSWORD RESET SUCCESS SCREEN ---
   if (resetEmailSent) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-            <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md text-center">
-                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="min-h-screen flex items-center justify-center bg-matte-950 p-4">
+            <div className="bg-matte-900 p-8 rounded-2xl shadow-2xl border border-matte-800 w-full max-w-md text-center">
+                <div className="w-16 h-16 bg-neon-green/10 text-neon-green rounded-full flex items-center justify-center mx-auto mb-6 border border-neon-green/20">
                     <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                 </div>
                 
-                <h1 className="text-2xl font-bold text-slate-900 mb-2">Reset Link Sent</h1>
-                <p className="text-slate-600 mb-8 leading-relaxed">
-                    We sent you a password change link to <br/><span className="font-semibold text-slate-800">{email}</span>.
+                <h1 className="text-2xl font-bold text-white mb-2 glow-text">Reset Link Sent</h1>
+                <p className="text-gray-400 mb-8 leading-relaxed">
+                    We sent you a password change link to <br/><span className="font-bold text-neon-blue">{email}</span>.
                 </p>
 
                 <button 
                     onClick={handleBackToLogin}
-                    className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors"
+                    className="w-full bg-neon-blue text-matte-950 py-2.5 rounded-lg font-bold hover:bg-cyan-400 shadow-glow-blue transition-all"
                 >
                     Sign In
                 </button>
@@ -173,31 +173,31 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
   // --- FORGOT PASSWORD FORM ---
   if (isForgotPassword) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-            <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+        <div className="min-h-screen flex items-center justify-center bg-matte-950 p-4">
+            <div className="bg-matte-900 p-8 rounded-2xl shadow-2xl border border-matte-800 w-full max-w-md">
                 <div className="text-center mb-8">
-                    <h1 className="text-2xl font-bold text-slate-900 mb-2">Reset Password</h1>
-                    <p className="text-slate-500">Enter your email to receive instructions</p>
+                    <h1 className="text-2xl font-bold text-white mb-2 glow-text">Reset Password</h1>
+                    <p className="text-gray-500">Enter your email to receive instructions</p>
                 </div>
 
                 {error && (
-                    <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-lg flex items-start">
-                        <svg className="w-5 h-5 text-rose-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start">
+                        <svg className="w-5 h-5 text-red-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <p className="text-sm text-rose-700 font-medium">{error}</p>
+                        <p className="text-sm text-red-400 font-medium">{error}</p>
                     </div>
                 )}
 
                 <form onSubmit={handlePasswordReset} className="space-y-4">
                     <div className="space-y-1">
-                        <label className="block text-sm font-medium text-slate-700">Email</label>
+                        <label className="block text-sm font-medium text-gray-400">Email</label>
                         <input 
                             type="email" 
                             required 
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                            className="w-full px-4 py-2 bg-matte-950 border border-matte-700 rounded-lg focus:ring-1 focus:ring-neon-blue focus:border-neon-blue text-white outline-none transition-all placeholder-gray-600"
                             placeholder="name@company.com"
                         />
                     </div>
@@ -205,7 +205,7 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
                     <button 
                         type="submit" 
                         disabled={loading}
-                        className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                        className="w-full bg-neon-blue text-matte-950 py-2.5 rounded-lg font-bold hover:bg-cyan-400 shadow-glow-blue transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
                     >
                         {loading ? 'Sending...' : 'Get Reset Link'}
                     </button>
@@ -214,7 +214,7 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
                 <div className="mt-6 text-center text-sm">
                     <button 
                         onClick={handleBackToLogin}
-                        className="font-medium text-slate-600 hover:text-slate-900 hover:underline flex items-center justify-center w-full"
+                        className="font-medium text-gray-400 hover:text-white hover:underline flex items-center justify-center w-full transition-colors"
                     >
                         <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -229,56 +229,56 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
 
   // --- LOGIN / REGISTER SCREEN ---
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-matte-950 p-4">
+      <div className="bg-matte-900 p-8 rounded-2xl shadow-2xl border border-matte-800 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+          <h1 className="text-2xl font-bold text-white mb-2 glow-text">
             EcosysTHEM Admin
           </h1>
-          <p className="text-slate-500">
+          <p className="text-gray-500">
             Sign in to access the console
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-lg flex items-start">
-             <svg className="w-5 h-5 text-rose-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start">
+             <svg className="w-5 h-5 text-red-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
              </svg>
              <div>
-                <p className="text-sm text-rose-700 font-medium">{error}</p>
+                <p className="text-sm text-red-400 font-medium">{error}</p>
              </div>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Email</label>
+            <label className="block text-sm font-medium text-gray-400">Email</label>
             <input 
               type="email" 
               required 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+              className="w-full px-4 py-2 bg-matte-950 border border-matte-700 rounded-lg focus:ring-1 focus:ring-neon-blue focus:border-neon-blue text-white outline-none transition-all placeholder-gray-600"
               placeholder="name@company.com"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Password</label>
+            <label className="block text-sm font-medium text-gray-400">Password</label>
             <input 
               type="password" 
               required 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+              className="w-full px-4 py-2 bg-matte-950 border border-matte-700 rounded-lg focus:ring-1 focus:ring-neon-blue focus:border-neon-blue text-white outline-none transition-all placeholder-gray-600"
               placeholder="••••••••"
             />
              <div className="flex justify-end pt-1">
                 <button 
                     type="button" 
                     onClick={handleForgotPasswordClick}
-                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium hover:underline"
+                    className="text-xs text-neon-blue hover:text-cyan-400 font-medium hover:underline transition-colors"
                 >
                     Forgot password?
                 </button>
@@ -288,11 +288,11 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+            className="w-full bg-neon-blue text-matte-950 py-2.5 rounded-lg font-bold hover:bg-cyan-400 shadow-glow-blue transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-6"
           >
             {loading ? (
                 <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-matte-950" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -306,10 +306,10 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
 
         <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
+                <div className="w-full border-t border-matte-800"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-slate-500">Or continue with</span>
+                <span className="px-2 bg-matte-900 text-gray-500">Or continue with</span>
             </div>
         </div>
 
@@ -317,7 +317,7 @@ const Auth: React.FC<AuthProps> = ({ needsVerification = false, email: initialEm
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full flex items-center justify-center px-4 py-2.5 border border-slate-300 rounded-lg shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center px-4 py-2.5 border border-matte-700 rounded-lg shadow-sm bg-matte-950 text-sm font-medium text-gray-300 hover:bg-matte-800 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
             <img 
                 src={googleIconUrl}

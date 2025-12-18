@@ -9,42 +9,70 @@ import {
   query,
   orderBy,
   onSnapshot,
+  QueryDocumentSnapshot,
+  SnapshotOptions,
+  DocumentData
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { House } from '../../types';
 
 const housesCol = collection(db, 'houses');
 
-function houseConverter(data: any, id: string): House {
-  return {
-    id,
-    name: data.name,
-    address: data.address,
-    capacity: data.capacity,
-    status: data.status,
-    tags: data.tags ?? [],
-    notes: data.notes,
-    city: data.city,
-    state: data.state,
-    postalCode: data.postalCode,
-    createdAt: data.createdAt ?? new Date().toISOString(),
-    updatedAt: data.updatedAt ?? new Date().toISOString(),
-  };
+// Define Firestore data shape
+interface HouseFirestoreData {
+  name: string;
+  address: string;
+  capacity: number;
+  status: 'ONLINE' | 'MAINTENANCE' | 'OFFLINE';
+  tags?: string[];
+  notes?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
+const houseConverter = {
+  toFirestore(house: Partial<House>): DocumentData {
+    const { id, ...data } = house;
+    return data;
+  },
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot,
+    options: SnapshotOptions
+  ): House {
+    const data = snapshot.data(options) as HouseFirestoreData;
+    return {
+      id: snapshot.id,
+      name: data.name,
+      address: data.address,
+      capacity: data.capacity,
+      status: data.status,
+      tags: data.tags ?? [],
+      notes: data.notes ?? undefined,
+      city: data.city ?? undefined,
+      state: data.state ?? undefined,
+      postalCode: data.postalCode ?? undefined,
+      createdAt: data.createdAt ?? new Date().toISOString(),
+      updatedAt: data.updatedAt ?? new Date().toISOString(),
+    };
+  }
+};
+
 export async function fetchHouses(): Promise<House[]> {
-  const q = query(housesCol, orderBy('name'));
+  const q = query(housesCol.withConverter(houseConverter), orderBy('name'));
   const snap = await getDocs(q);
-  return snap.docs.map(d => houseConverter(d.data(), d.id));
+  return snap.docs.map(d => d.data());
 }
 
 export function subscribeToHouses(
   onUpdate: (houses: House[]) => void,
   onError?: (error: Error) => void
 ): () => void {
-  const q = query(housesCol, orderBy('name'));
+  const q = query(housesCol.withConverter(houseConverter), orderBy('name'));
   return onSnapshot(q, (snapshot) => {
-    const houses = snapshot.docs.map((d) => houseConverter(d.data(), d.id));
+    const houses = snapshot.docs.map((d) => d.data());
     onUpdate(houses);
   }, (error) => {
     console.error("Error subscribing to houses:", error);
@@ -53,10 +81,10 @@ export function subscribeToHouses(
 }
 
 export async function fetchHouseById(id: string): Promise<House | null> {
-  const ref = doc(db, 'houses', id);
+  const ref = doc(db, 'houses', id).withConverter(houseConverter);
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
-  return houseConverter(snap.data(), snap.id);
+  return snap.data();
 }
 
 export interface CreateHouseInput {
@@ -74,13 +102,8 @@ export interface CreateHouseInput {
 export async function createHouse(input: CreateHouseInput): Promise<string> {
   const now = new Date().toISOString();
   
-  // Helper to remove undefined keys to prevent Firestore errors
-  const cleanData = (obj: any) => {
-    Object.keys(obj).forEach(key => obj[key] === undefined && delete obj[key]);
-    return obj;
-  };
-
-  const data = cleanData({
+  // Explicitly typed object creation to avoid 'any'
+  const data: Record<string, unknown> = {
     name: input.name.trim(),
     address: input.address.trim(),
     capacity: input.capacity,
@@ -94,7 +117,11 @@ export async function createHouse(input: CreateHouseInput): Promise<string> {
     updatedAt: now,
     createdAtServer: serverTimestamp(),
     updatedAtServer: serverTimestamp(),
-  });
+  };
+
+  // Remove undefined/null values if necessary, though Firestore handles null. 
+  // We remove undefined to be safe.
+  Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
 
   const docRef = await addDoc(housesCol, data);
   return docRef.id;
@@ -115,7 +142,8 @@ export interface UpdateHouseInput {
 export async function updateHouse(id: string, input: UpdateHouseInput): Promise<void> {
   const ref = doc(db, 'houses', id);
   
-  const update: Record<string, any> = { 
+  // Strictly typed update object
+  const update: Record<string, string | number | string[] | null | object> = { 
     updatedAt: new Date().toISOString(), 
     updatedAtServer: serverTimestamp() 
   };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Member, House, UserRole, MemberStatus } from '../../../types';
-import { createMember, updateMember } from '../../services/memberService';
+import { Member, House, UserRole } from '../../../types';
+import { createMember } from '../../services/memberService';
 
 interface MembersProps {
   members: Member[];
@@ -12,18 +12,15 @@ const Members: React.FC<MembersProps> = ({ members, houses, userRole }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   
-  // Basic RBAC
   const canEdit = [UserRole.ADMIN, UserRole.OPERATIONS_MANAGER].includes(userRole);
 
   const handleAddMember = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!newMemberName.trim()) return;
       try {
-          // Explicitly define structure for new members, ensuring numbers are numbers
           await createMember({ 
               fullName: newMemberName,
               accountBalance: 0,
-              // Other defaults are handled in service, but being explicit here is safer for UI intent
           });
           setShowAddModal(false);
           setNewMemberName('');
@@ -36,13 +33,13 @@ const Members: React.FC<MembersProps> = ({ members, houses, userRole }) => {
       if (!houseId) return <span className="text-slate-500 italic font-normal text-xs">UNASSIGNED</span>;
       const house = houses.find(h => h.id === houseId);
       return house ? (
-        <span className="text-cyber-blue-500 font-bold text-xs uppercase tracking-wider">{house.name}</span>
+        <span className="text-neon-blue-500 font-bold text-xs uppercase tracking-wider truncate">{house.name}</span>
       ) : <span className="text-neon-red-500 font-bold text-xs uppercase tracking-wider">UNKNOWN</span>;
   };
 
   return (
-    <div className="space-y-8 animate-enter">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 animate-enter p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
          <div>
             <h2 className="text-xl font-bold text-white glow-text">Member Directory</h2>
             <p className="text-sm text-slate-400 mt-1">Manage personnel and residents.</p>
@@ -50,7 +47,7 @@ const Members: React.FC<MembersProps> = ({ members, houses, userRole }) => {
          {canEdit && (
              <button 
                 onClick={() => setShowAddModal(true)}
-                className="btn btn-primary"
+                className="btn btn-primary w-full sm:w-auto"
              >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                 Add Member
@@ -58,53 +55,56 @@ const Members: React.FC<MembersProps> = ({ members, houses, userRole }) => {
          )}
       </div>
 
-      <div className="card overflow-hidden bg-dark-surface/80 backdrop-blur-sm border-white/5">
-         <table className="min-w-full divide-y divide-white/5">
-            <thead>
-               <tr className="bg-black-matte/30">
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Name</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Residence</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Balance</th>
-                  <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Action</th>
-               </tr>
-            </thead>
-            <tbody className="bg-transparent divide-y divide-white/5">
-               {members.length === 0 ? (
-                   <tr><td colSpan={5} className="p-12 text-center text-slate-500 italic">No members found in directory.</td></tr>
-               ) : members.map(m => (
-                   <tr key={m.id} className="group hover:bg-white/5 transition-colors duration-150">
-                       <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                             <div className="h-9 w-9 rounded-lg bg-black-matte border border-white/10 flex items-center justify-center text-cyber-blue-500 text-sm font-bold mr-3 shadow-inner">
-                                {m.fullName.charAt(0)}
-                             </div>
-                             <div className="text-sm font-bold text-white group-hover:text-cyber-blue-500 transition-colors">{m.fullName}</div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {members.map(m => (
+              <div key={m.id} className="bg-matte-900 border border-matte-800 rounded-lg p-4 flex flex-col gap-3 hover:border-matte-700 transition-colors">
+                  {/* Header: Avatar + Name + Status */}
+                  <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-black-matte border border-white/10 flex items-center justify-center text-neon-blue-500 font-bold shadow-inner">
+                             {m.fullName.charAt(0)}
                           </div>
-                       </td>
-                       <td className="px-6 py-4 whitespace-nowrap">
-                           <span className={`badge ${m.status === 'ACTIVE' ? 'badge-success' : 'badge-neutral'}`}>
-                               {m.status}
-                           </span>
-                       </td>
-                       <td className="px-6 py-4 whitespace-nowrap">
-                          {getHouseName(m.houseId)}
-                       </td>
-                       <td className="px-6 py-4 whitespace-nowrap">
-                           <div className={`text-sm font-bold font-mono ${m.accountBalance < 0 ? 'text-neon-red-500' : 'text-neon-green-500'}`}>
-                               ${m.accountBalance.toLocaleString()}
-                           </div>
-                       </td>
-                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                          <button className="text-slate-500 hover:text-white font-medium transition-colors text-xs uppercase tracking-wider">
-                             Edit
-                          </button>
-                       </td>
-                   </tr>
-               ))}
-            </tbody>
-         </table>
+                          <div className="flex flex-col min-w-0">
+                              <span className="text-white font-bold text-sm truncate" title={m.fullName}>{m.fullName}</span>
+                              <span className="text-xs text-slate-500 font-mono truncate">ID: {m.id.slice(0, 8)}</span>
+                          </div>
+                      </div>
+                      <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded border ${m.status === 'ACTIVE' ? 'bg-neon-blue-500/10 text-neon-blue-500 border-neon-blue-500/20' : 'bg-slate-500/10 text-slate-500 border-slate-500/20'}`}>
+                          {m.status}
+                      </span>
+                  </div>
+
+                  {/* Body: Residence + Balance */}
+                  <div className="grid grid-cols-2 gap-2 mt-1 border-t border-white/5 pt-3">
+                      <div className="flex flex-col">
+                          <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Residence</span>
+                          <div className="truncate text-sm">
+                              {getHouseName(m.houseId)}
+                          </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                          <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Balance</span>
+                          <span className={`text-sm font-bold font-mono ${m.accountBalance < 0 ? 'text-neon-red-500' : 'text-neon-green-500'}`}>
+                             ${m.accountBalance.toLocaleString()}
+                          </span>
+                      </div>
+                  </div>
+
+                  {/* Footer: Actions */}
+                  <div className="mt-2 pt-2">
+                       <button className="w-full py-1.5 text-xs font-bold text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded border border-white/5 transition-colors uppercase tracking-wide">
+                          View Profile
+                       </button>
+                  </div>
+              </div>
+          ))}
       </div>
+      
+      {members.length === 0 && (
+          <div className="p-12 text-center text-slate-500 italic bg-matte-900 border border-matte-800 rounded-lg">
+              No members found in directory.
+          </div>
+      )}
 
       {showAddModal && (
           <div className="fixed inset-0 bg-black-matte/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-enter">
@@ -117,11 +117,11 @@ const Members: React.FC<MembersProps> = ({ members, houses, userRole }) => {
                   </div>
                   <form onSubmit={handleAddMember} className="p-8 space-y-6">
                       <div>
-                          <label className="block text-xs font-bold text-cyber-blue-500 uppercase tracking-widest mb-2">Full Name</label>
+                          <label className="block text-xs font-bold text-neon-blue-500 uppercase tracking-widest mb-2">Full Name</label>
                           <input 
                             type="text" 
                             required 
-                            className="input" 
+                            className="input w-full bg-black-matte border border-white/10 rounded px-3 py-2 text-white focus:border-neon-blue-500 outline-none" 
                             placeholder="Operative Name"
                             value={newMemberName}
                             onChange={e => setNewMemberName(e.target.value)}

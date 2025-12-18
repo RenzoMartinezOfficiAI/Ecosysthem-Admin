@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { House, Member, HouseStatus } from '../types';
 import { useHouses } from '../src/hooks/useHouses';
 import { useMembers } from '../src/hooks/useMembers';
@@ -7,6 +7,7 @@ import { updateMember } from '../src/services/memberService';
 export const HousingAssignment: React.FC = () => {
   const { houses, loading: housesLoading } = useHouses();
   const { members, loading: membersLoading } = useMembers();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const [draggedMemberId, setDraggedMemberId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -34,6 +35,21 @@ export const HousingAssignment: React.FC = () => {
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+
+    // Auto-scroll horizontal container
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const { left, width } = container.getBoundingClientRect();
+      const x = e.clientX;
+      const threshold = 100; // Trigger scroll when within 100px of edge
+      const speed = 5; // Slower scroll speed for better control
+
+      if (x < left + threshold) {
+        container.scrollLeft -= speed;
+      } else if (x > left + width - threshold) {
+        container.scrollLeft += speed;
+      }
+    }
   };
 
   const handleDrop = async (e: React.DragEvent, targetHouseId: string | null) => {
@@ -63,24 +79,28 @@ export const HousingAssignment: React.FC = () => {
   };
 
   if (housesLoading || membersLoading) {
-    return <div className="p-8 text-center text-slate-500">Loading assignment board...</div>;
+    return <div className="p-8 text-center text-gray-500">Loading assignment board...</div>;
   }
 
   return (
     <div className="h-full flex flex-col">
       <div className="mb-6 flex justify-between items-start">
         <div>
-           <h2 className="text-xl font-bold text-slate-900">Housing Assignment</h2>
-           <p className="text-sm text-slate-500 mt-1">Drag and drop members to assign them to houses.</p>
+           <h2 className="text-xl font-bold text-white glow-text">Housing Assignment</h2>
+           <p className="text-sm text-gray-500 mt-1">Drag and drop members to assign them to houses.</p>
         </div>
         {error && (
-            <div className="px-4 py-2 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg">
+            <div className="px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-lg">
                 {error}
             </div>
         )}
       </div>
 
-      <div className="flex-1 overflow-x-auto pb-4">
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 overflow-x-auto pb-4"
+        onDragOver={handleDragOver}
+      >
         <div className="flex space-x-6 min-w-max h-full">
           
           {/* UNASSIGNED COLUMN */}
@@ -139,9 +159,9 @@ const HouseColumn: React.FC<ColumnProps> = ({
   const isOverCapacity = !isUnassigned && members.length > capacity;
   
   // Status Color Logic
-  const statusColor = status === 'OFFLINE' ? 'bg-slate-100 border-slate-300' :
-                      status === 'MAINTENANCE' ? 'bg-amber-50 border-amber-200' :
-                      'bg-white border-slate-200';
+  const statusColor = status === 'OFFLINE' ? 'bg-matte-800 border-matte-700' :
+                      status === 'MAINTENANCE' ? 'bg-amber-500/10 border-amber-500/20' :
+                      'bg-matte-900 border-matte-800';
 
   return (
     <div 
@@ -149,18 +169,18 @@ const HouseColumn: React.FC<ColumnProps> = ({
       onDrop={onDrop}
       className={`
         w-80 flex flex-col rounded-xl border-2 transition-colors duration-200
-        ${isUnassigned ? 'bg-slate-50 border-dashed border-slate-300' : statusColor}
+        ${isUnassigned ? 'bg-matte-900 border-dashed border-matte-700' : statusColor}
       `}
     >
       {/* Header */}
-      <div className="p-4 border-b border-slate-200/50">
+      <div className="p-4 border-b border-matte-800/50">
         <div className="flex justify-between items-start">
-            <h3 className={`font-bold ${isUnassigned ? 'text-slate-600' : 'text-slate-900'}`}>
+            <h3 className={`font-bold ${isUnassigned ? 'text-gray-500' : 'text-white'}`}>
                 {name}
             </h3>
             {!isUnassigned && status && (
                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                    status === 'ONLINE' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
+                    status === 'ONLINE' ? 'bg-neon-green/10 text-neon-green' : 'bg-matte-800 text-gray-500'
                  }`}>
                     {status}
                  </span>
@@ -169,18 +189,18 @@ const HouseColumn: React.FC<ColumnProps> = ({
         
         <div className="mt-2 flex justify-between items-end">
             <div className={`text-xs font-medium ${
-                isOverCapacity ? 'text-rose-600' : isFull ? 'text-amber-600' : 'text-slate-500'
+                isOverCapacity ? 'text-red-500' : isFull ? 'text-amber-500' : 'text-gray-500'
             }`}>
                 {isUnassigned ? (
                     `${members.length} Members`
                 ) : (
                     <>
-                        <span className="text-lg">{members.length}</span> <span className="text-slate-400">/ {capacity}</span>
+                        <span className="text-lg">{members.length}</span> <span className="text-gray-600">/ {capacity}</span>
                     </>
                 )}
             </div>
             {isOverCapacity && (
-                <span className="text-xs text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-full">
+                <span className="text-xs text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
                     Over Capacity
                 </span>
             )}
@@ -195,24 +215,24 @@ const HouseColumn: React.FC<ColumnProps> = ({
                 draggable
                 onDragStart={(e) => onDragStart(e, m.id)}
                 className={`
-                    p-3 rounded-lg shadow-sm border border-slate-200 bg-white cursor-move 
-                    hover:shadow-md hover:border-indigo-300 transition-all active:cursor-grabbing
+                    p-3 rounded-lg shadow-sm border border-matte-800 bg-matte-950 cursor-move 
+                    hover:shadow-glow-blue hover:border-neon-blue transition-all active:cursor-grabbing group
                     ${updatingId === m.id ? 'opacity-50 animate-pulse' : ''}
                 `}
             >
                 <div className="flex justify-between items-start">
-                    <div className="font-semibold text-slate-800 text-sm">{m.fullName}</div>
+                    <div className="font-semibold text-gray-200 text-sm group-hover:text-neon-blue transition-colors">{m.fullName}</div>
                     <span className={`w-2 h-2 rounded-full mt-1.5 ${
-                        m.status === 'ACTIVE' ? 'bg-emerald-400' : 'bg-slate-300'
+                        m.status === 'ACTIVE' ? 'bg-neon-green' : 'bg-matte-700'
                     }`}></span>
                 </div>
-                <div className="mt-1 text-xs text-slate-500 truncate">
+                <div className="mt-1 text-xs text-gray-500 truncate">
                     {m.payType}
                 </div>
             </div>
         ))}
         {members.length === 0 && (
-            <div className="h-full flex items-center justify-center text-xs text-slate-400 italic">
+            <div className="h-full flex items-center justify-center text-xs text-gray-600 italic">
                 No members assigned
             </div>
         )}
