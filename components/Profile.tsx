@@ -3,7 +3,7 @@ import { useAuth } from '../src/context/AuthContext';
 import { db, storage } from '../src/lib/firebase';
 import { doc, updateDoc, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage';
-import { updateProfile } from 'firebase/auth';
+import { updateProfile, updatePassword } from 'firebase/auth';
 import { UserProfile, UserFile } from '../types';
 import { summarizeFile } from '../src/services/geminiService';
 
@@ -16,6 +16,8 @@ const Profile: React.FC = () => {
   // Profile State
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [photoURL, setPhotoURL] = useState(user?.photoURL || '');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // File State
   const [files, setFiles] = useState<UserFile[]>([]);
@@ -43,18 +45,39 @@ const Profile: React.FC = () => {
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    
+    if (newPassword && newPassword !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
     setLoading(true);
     try {
       await updateProfile(user, { displayName, photoURL });
+      
       // Update Firestore user doc as well
       await updateDoc(doc(db, 'users', user.uid), {
         displayName,
         photoURL
       });
+
+      if (newPassword) {
+        await updatePassword(user, newPassword);
+        setNewPassword('');
+        setConfirmPassword('');
+        alert("Profile and password updated successfully");
+      } else {
+        alert("Profile updated successfully");
+      }
+      
       setIsEditing(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Profile update failed", err);
-      alert("Failed to update profile");
+      if (err.code === 'auth/requires-recent-login') {
+          alert("To update your password, please sign out and sign in again.");
+      } else {
+          alert("Failed to update profile: " + err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -267,6 +290,29 @@ const Profile: React.FC = () => {
                         />
                     </div>
                     
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">New Password</label>
+                        <input 
+                            type="password" 
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                            placeholder="Leave blank to keep current"
+                            className="w-full px-3 py-2 bg-matte-950 border border-matte-700 rounded-lg focus:ring-1 focus:ring-neon-blue text-white outline-none"
+                        />
+                    </div>
+                    
+                    {newPassword && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-1">Confirm Password</label>
+                            <input 
+                                type="password" 
+                                value={confirmPassword}
+                                onChange={e => setConfirmPassword(e.target.value)}
+                                className="w-full px-3 py-2 bg-matte-950 border border-matte-700 rounded-lg focus:ring-1 focus:ring-neon-blue text-white outline-none"
+                            />
+                        </div>
+                    )}
+
                     <div>
                         <label className="block text-sm font-medium text-gray-400 mb-1">Profile Photo</label>
                          <div className="flex items-center gap-4 mb-2">

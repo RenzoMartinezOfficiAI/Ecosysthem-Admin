@@ -135,21 +135,27 @@ const Layout: React.FC<LayoutProps> = ({ children, currentRole, currentPage, onN
 
         <div className="p-4 border-t border-white/5 bg-matte-950/30">
            {isSidebarOpen ? (
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 mb-3 hover:border-neon-blue/30 transition-colors cursor-default">
+              <button 
+                onClick={() => onNavigate('profile')}
+                className="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 mb-3 hover:border-neon-blue/30 hover:bg-white/10 transition-colors group cursor-pointer"
+              >
                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-matte-800 to-matte-950 border border-neon-blue/30 flex items-center justify-center text-sm font-bold text-neon-blue shadow-inner flex-shrink-0">
                     {user?.email?.charAt(0).toUpperCase()}
                  </div>
                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <p className="text-sm font-bold text-white truncate">{user?.displayName || 'User'}</p>
+                    <p className="text-sm font-bold text-white truncate group-hover:text-neon-blue transition-colors">{user?.displayName || 'User'}</p>
                     <p className="text-[10px] text-slate-400 truncate uppercase tracking-wider">{role}</p>
                  </div>
-              </div>
+              </button>
            ) : (
-              <div className="flex justify-center mb-3">
-                 <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-matte-800 to-matte-950 border border-neon-blue/30 flex items-center justify-center text-sm font-bold text-neon-blue shadow-inner cursor-default" title={user?.email}>
+              <button 
+                onClick={() => onNavigate('profile')}
+                className="w-full flex justify-center mb-3 cursor-pointer"
+              >
+                 <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-matte-800 to-matte-950 border border-neon-blue/30 flex items-center justify-center text-sm font-bold text-neon-blue shadow-inner" title={user?.email}>
                     {user?.email?.charAt(0).toUpperCase()}
                  </div>
-              </div>
+              </button>
            )}
           
           <button 
