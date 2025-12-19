@@ -74,7 +74,9 @@ const Dashboard: React.FC<DashboardProps> = ({ houses, members, errors }) => {
       <div className="bg-matte-900 rounded-xl shadow-sm border border-matte-800 overflow-hidden">
         <div className="px-6 py-4 border-b border-matte-800 flex justify-between items-center bg-matte-900/50">
           <h2 className="font-semibold text-white tracking-wide">System Health & Alerts</h2>
-          <span className="text-xs px-2 py-1 bg-red-500/10 text-red-500 border border-red-500/20 rounded-full font-bold uppercase tracking-wider">Attention Needed</span>
+          {errors.length > 0 && (
+            <span className="text-xs px-2 py-1 bg-red-500/10 text-red-500 border border-red-500/20 rounded-full font-bold uppercase tracking-wider">Attention Needed</span>
+          )}
         </div>
         <div className="divide-y divide-matte-800">
           {errors.length === 0 ? (

@@ -91,7 +91,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentRole, currentPage, onN
         {/* Glow effect behind logo */}
         <div className="absolute top-0 left-0 w-full h-32 bg-neon-blue/5 blur-3xl pointer-events-none"></div>
         
-        <div className="p-4 relative z-10 flex items-center justify-between">
+        <div className={`p-4 relative z-10 flex ${isSidebarOpen ? 'flex-row items-center justify-between' : 'flex-col items-center gap-4'}`}>
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="w-10 h-10 bg-neon-blue/10 border border-neon-blue/30 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.2)] flex-shrink-0">
                <span className="text-neon-blue font-bold text-xl tracking-tight">E</span>
