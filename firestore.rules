@@ -9,10 +9,13 @@ service cloud.firestore {
     }
 
     function getUserRole() {
-      // Safely check if the user document exists before trying to access it
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
-             ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
-             : null;
+      // 1. Check Custom Claims (Preferred/Fastest)
+      // 2. Fallback to Firestore User Document
+      return (request.auth.token.keys().hasAny(['role']) && request.auth.token.role != null) 
+             ? request.auth.token.role
+             : (exists(/databases/$(database)/documents/users/$(request.auth.uid))
+                ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+                : null);
     }
 
     function isAdmin() {

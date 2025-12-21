@@ -21,8 +21,8 @@ const MaintenanceList: React.FC<MaintenanceProps> = ({ house, userRole, onBack }
         dueDate: new Date().toISOString().split('T')[0]
     });
 
-    const canManage = [UserRole.ADMIN, UserRole.OPERATIONS_MANAGER].includes(userRole);
-    const canComplete = canManage || userRole === UserRole.HOUSE_LEAD;
+    const canManage = [UserRole.ADMIN, UserRole.OPERATIONS_MANAGER, UserRole.HOUSE_LEAD].includes(userRole);
+    const canComplete = canManage;
 
     useEffect(() => {
         loadTasks();

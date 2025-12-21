@@ -23,7 +23,7 @@ const MaintenanceConsole: React.FC<MaintenanceConsoleProps> = ({ houses, userRol
     });
     const [broadcasting, setBroadcasting] = useState(false);
 
-    const canManage = [UserRole.ADMIN, UserRole.OPERATIONS_MANAGER].includes(userRole);
+    const canManage = [UserRole.ADMIN, UserRole.OPERATIONS_MANAGER, UserRole.HOUSE_LEAD].includes(userRole);
 
     const handleBroadcast = async (e: React.FormEvent) => {
         e.preventDefault();
